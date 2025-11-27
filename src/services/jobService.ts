@@ -35,7 +35,7 @@ export const jobService = {
   },
 
   async getJob(id: string): Promise<Job> {
-    const response = await fetch(`${API_BASE_URL}/jobs/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/public/jobs/${id}`, {
       headers: getAuthHeaders(),
     });
     if (!response.ok) {

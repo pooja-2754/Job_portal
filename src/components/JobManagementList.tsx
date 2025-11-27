@@ -5,9 +5,10 @@ import JobPostingForm from './JobPostingForm';
 
 interface JobManagementListProps {
   onJobSelect?: (job: Job) => void;
+  onPostNewJob?: () => void;
 }
 
-const JobManagementList: React.FC<JobManagementListProps> = ({ onJobSelect }) => {
+const JobManagementList: React.FC<JobManagementListProps> = ({ onJobSelect, onPostNewJob }) => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -101,7 +102,7 @@ const JobManagementList: React.FC<JobManagementListProps> = ({ onJobSelect }) =>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Manage Jobs</h2>
         <button
-          onClick={() => setShowForm(true)}
+          onClick={onPostNewJob || (() => setShowForm(true))}
           className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
           Post New Job
@@ -158,7 +159,7 @@ const JobManagementList: React.FC<JobManagementListProps> = ({ onJobSelect }) =>
         <div className="text-center py-8">
           <p className="text-gray-600">No jobs found.</p>
           <button
-            onClick={() => setShowForm(true)}
+            onClick={onPostNewJob || (() => setShowForm(true))}
             className="mt-2 text-indigo-600 hover:text-indigo-800 font-medium"
           >
             Post your first job
@@ -198,14 +199,16 @@ const JobManagementList: React.FC<JobManagementListProps> = ({ onJobSelect }) =>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{job.title}</div>
                     {job.salary && (
-                      <div className="text-sm text-gray-500">{job.salary}</div>
+                      <div className="text-sm text-gray-500">
+                        {typeof job.salary === 'object' ? job.salary.formatted || 'Salary not specified' : job.salary}
+                      </div>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {job.company}
+                    {job.company.name}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {job.location}
+                    {job.location.city}, {job.location.state}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">

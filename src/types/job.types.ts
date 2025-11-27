@@ -3,16 +3,28 @@ export type ApplicationStatus = 'Pending' | 'Under Review' | 'Shortlisted' | 'Re
 
 export interface Job {
   id: string
+  slug?: string | null
   title: string
-  company: string
-  location: string
+  company: Company
+  location: Location
   type: JobType
-  salary?: string
+  typeDisplayName?: string
+  workplaceType?: string
+  experienceLevel?: string
+  salary: Salary | string;
   description: string
+  descriptionHtml?: string
+  responsibilities?: string
   requirements?: string
+  requirementsHtml?: string
+  benefits?: string
+  skills?: string[]
+  applyUrl?: string
   postedDate?: string
   deadline?: string
+  daysUntilDeadline?: number
   isActive?: boolean
+  applicationCount?: number
 }
 
 export interface Application {
@@ -28,4 +40,35 @@ export interface Application {
   appliedDate: string
   experience?: string
   education?: string
+}
+
+export interface Salary {
+  min: number | null;
+  max: number | null;
+  currency: string | null;
+  period: string;
+  isNegotiable: boolean | null;
+  formatted: string | null;
+}
+
+
+export interface Company {
+  id: number;
+  name: string;
+  logoUrl?: string;
+  website?: string;
+  description?: string;
+  industry?: string;
+  size?: string;
+}
+
+export interface Location {
+  city: string;
+  state: string;
+  country: string;
+  zipCode?: string;
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
 }

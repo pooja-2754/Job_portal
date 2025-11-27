@@ -1,271 +1,311 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { jobService } from '../services/jobService';
-import type { Job } from '../types/job.types';
-import JobManagementList from '../components/JobManagementList';
-import ApplicationManagement from '../components/ApplicationManagement';
+import React, { useState, useEffect } from 'react'
+import { jobService } from '../services/jobService'
+import type { Job } from '../types/job.types'
+import JobManagementList from '../components/JobManagementList'
+import ApplicationManagement from '../components/ApplicationManagement'
+import JobPostingForm from '../components/JobPostingForm'
+import RecruiterSettings from '../components/RecruiterSettings'
+import { Navbar } from '../components/Navbar'
+import { 
+  LayoutDashboard, 
+  Briefcase, 
+  Users, 
+  PlusCircle, 
+  Settings, 
+  LogOut, 
+  TrendingUp, 
+  FileText,
+  AlertCircle,
+  Clock,
+  CheckCircle2
+} from 'lucide-react'
 
-type ViewType = 'overview' | 'jobs' | 'applications';
+// Define View Types
+type ViewType = 'overview' | 'jobs' | 'applications' | 'create-job' | 'settings'
 
+// Define Stats Interface
 interface DashboardStats {
-  totalJobs: number;
-  activeJobs: number;
-  totalApplications: number;
-  pendingApplications: number;
+  totalJobs: number
+  activeJobs: number
+  totalApplications: number
+  pendingApplications: number
 }
 
+// Sidebar Navigation Items
+const SIDEBAR_ITEMS = [
+  { id: 'overview', icon: LayoutDashboard, label: 'Overview' },
+  { id: 'jobs', icon: Briefcase, label: 'Manage Jobs' },
+  { id: 'applications', icon: Users, label: 'Applications' },
+  { id: 'create-job', icon: PlusCircle, label: 'Post New Job' },
+  { id: 'settings', icon: Settings, label: 'Settings' },
+]
+
 const RecruiterDashboard: React.FC = () => {
-  const { user, logout } = useAuth();
-  const [currentView, setCurrentView] = useState<ViewType>('overview');
-  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [currentView, setCurrentView] = useState<ViewType>('overview')
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null)
+  
+  // Stats State
   const [stats, setStats] = useState<DashboardStats>({
     totalJobs: 0,
     activeJobs: 0,
     totalApplications: 0,
     pendingApplications: 0,
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
+  // Fetch Stats
   useEffect(() => {
-    fetchDashboardStats();
-  }, []);
+    fetchDashboardStats()
+  }, [])
 
   const fetchDashboardStats = async () => {
     try {
-      setLoading(true);
-      const dashboardStats = await jobService.getDashboardStats();
-      setStats(dashboardStats);
+      setLoading(true)
+      const dashboardStats = await jobService.getDashboardStats()
+      setStats(dashboardStats)
     } catch (err) {
-      setError('Failed to fetch dashboard statistics. Please try again.');
-      console.error('Error fetching dashboard stats:', err);
+      setError('Failed to fetch dashboard statistics.')
+      console.error('Error fetching dashboard stats:', err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
+  // Navigation Handlers
   const handleJobSelect = (job: Job) => {
-    setSelectedJob(job);
-    setCurrentView('applications');
-  };
+    setSelectedJob(job)
+    setCurrentView('applications')
+  }
 
   const handleBackToJobs = () => {
-    setSelectedJob(null);
-    setCurrentView('jobs');
-  };
+    setSelectedJob(null)
+    setCurrentView('jobs')
+  }
 
-  const handleLogout = () => {
-    logout();
-  };
+  // --- Render Sections ---
 
-  const renderNavigation = () => (
-    <nav className="bg-white shadow">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <h1 className="text-xl font-semibold text-gray-900">Recruiter Dashboard</h1>
+  const renderOverview = () => {
+    const statCards = [
+      { label: 'Total Jobs', sub: 'Posted', value: stats.totalJobs, icon: Briefcase, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+      { label: 'Active Jobs', sub: 'Open', value: stats.activeJobs, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
+      { label: 'Total Applicants', sub: 'All Time', value: stats.totalApplications, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
+      { label: 'Pending Review', sub: 'Action Needed', value: stats.pendingApplications, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
+    ]
+
+    return (
+      <div className="space-y-8 max-w-6xl mx-auto">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-gray-200/60">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Recruiter Overview</h1>
+            <p className="text-gray-500 mt-1">Track your recruitment pipeline and job performance.</p>
           </div>
-          <div className="flex items-center space-x-4">
-            <span className="text-gray-700">Welcome, {user?.name || user?.email}</span>
-            <button
-              onClick={handleLogout}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-            >
-              Logout
-            </button>
-          </div>
+          <button 
+            onClick={() => setCurrentView('create-job')}
+            className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+          >
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Post New Job
+          </button>
         </div>
-      </div>
-    </nav>
-  );
+        
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center">
+            <AlertCircle className="w-5 h-5 mr-2" />
+            {error}
+          </div>
+        )}
 
-  const renderSidebar = () => (
-    <div className="bg-gray-50 w-64 min-h-screen p-4">
-      <div className="space-y-2">
-        <button
-          onClick={() => setCurrentView('overview')}
-          className={`w-full text-left px-4 py-2 rounded-md text-sm font-medium ${
-            currentView === 'overview'
-              ? 'bg-indigo-100 text-indigo-700'
-              : 'text-gray-700 hover:bg-gray-100'
-          }`}
-        >
-          Overview
-        </button>
-        <button
-          onClick={() => setCurrentView('jobs')}
-          className={`w-full text-left px-4 py-2 rounded-md text-sm font-medium ${
-            currentView === 'jobs'
-              ? 'bg-indigo-100 text-indigo-700'
-              : 'text-gray-700 hover:bg-gray-100'
-          }`}
-        >
-          Manage Jobs
-        </button>
-        <button
-          onClick={() => {
-            setSelectedJob(null);
-            setCurrentView('applications');
-          }}
-          className={`w-full text-left px-4 py-2 rounded-md text-sm font-medium ${
-            currentView === 'applications' && !selectedJob
-              ? 'bg-indigo-100 text-indigo-700'
-              : 'text-gray-700 hover:bg-gray-100'
-          }`}
-        >
-          All Applications
-        </button>
-      </div>
-    </div>
-  );
-
-  const renderOverview = () => (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">Dashboard Overview</h2>
-      
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
-      )}
-
-      {loading ? (
-        <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-          <p className="mt-2 text-gray-600">Loading dashboard...</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="flex items-center">
-              <div className="shrink-0 bg-indigo-100 rounded-lg p-3">
-                <div className="text-indigo-600 text-2xl font-bold">{stats.totalJobs}</div>
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-32 bg-gray-100 rounded-xl animate-pulse"></div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {statCards.map((stat) => (
+              <div key={stat.label} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center hover:shadow-md transition-shadow">
+                <div className={`p-3 rounded-lg ${stat.bg} mr-4`}>
+                  <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-sm font-medium text-gray-900">{stat.label}</p>
+                  <p className="text-xs text-gray-500">{stat.sub}</p>
+                </div>
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Total Jobs</p>
-                <p className="text-lg font-semibold text-gray-900">Posted</p>
-              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Quick Actions Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <TrendingUp className="w-5 h-5 mr-2 text-indigo-600" />
+              Quick Actions
+            </h3>
+            <div className="space-y-3">
+              <button
+                onClick={() => setCurrentView('jobs')}
+                className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-indigo-50 text-gray-700 hover:text-indigo-700 rounded-lg transition-colors group"
+              >
+                <span className="font-medium">Manage Active Jobs</span>
+                <Briefcase className="w-4 h-4 text-gray-400 group-hover:text-indigo-600" />
+              </button>
+              <button
+                onClick={() => setCurrentView('applications')}
+                className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-blue-700 rounded-lg transition-colors group"
+              >
+                <span className="font-medium">Review Applications</span>
+                <Users className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
+              </button>
+              <button
+                onClick={() => setCurrentView('create-job')}
+                className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-green-50 text-gray-700 hover:text-green-700 rounded-lg transition-colors group"
+              >
+                <span className="font-medium">Draft New Posting</span>
+                <FileText className="w-4 h-4 text-gray-400 group-hover:text-green-600" />
+              </button>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="flex items-center">
-              <div className="shrink-0 bg-green-100 rounded-lg p-3">
-                <div className="text-green-600 text-2xl font-bold">{stats.activeJobs}</div>
+          {/* Recent Activity Feed */}
+          <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Pipeline Activity</h3>
+            <div className="space-y-0 divide-y divide-gray-100">
+              <div className="flex items-center justify-between py-4">
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-amber-500 rounded-full mr-3"></div>
+                  <span className="text-gray-600">New applications pending review</span>
+                </div>
+                <span className="font-bold text-gray-900 bg-gray-100 px-3 py-1 rounded-full text-sm">
+                  {stats.pendingApplications}
+                </span>
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Active Jobs</p>
-                <p className="text-lg font-semibold text-gray-900">Currently Open</p>
+              <div className="flex items-center justify-between py-4">
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                  <span className="text-gray-600">Active job postings live</span>
+                </div>
+                <span className="font-bold text-gray-900 bg-gray-100 px-3 py-1 rounded-full text-sm">
+                  {stats.activeJobs}
+                </span>
               </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="flex items-center">
-              <div className="shrink-0 bg-blue-100 rounded-lg p-3">
-                <div className="text-blue-600 text-2xl font-bold">{stats.totalApplications}</div>
+              <div className="flex items-center justify-between py-4">
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-indigo-500 rounded-full mr-3"></div>
+                  <span className="text-gray-600">Closed jobs (Archived)</span>
+                </div>
+                <span className="font-bold text-gray-900 bg-gray-100 px-3 py-1 rounded-full text-sm">
+                  {stats.totalJobs - stats.activeJobs}
+                </span>
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Total</p>
-                <p className="text-lg font-semibold text-gray-900">Applications</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="flex items-center">
-              <div className="shrink-0 bg-yellow-100 rounded-lg p-3">
-                <div className="text-yellow-600 text-2xl font-bold">{stats.pendingApplications}</div>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Pending</p>
-                <p className="text-lg font-semibold text-gray-900">Review</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-          <div className="space-y-3">
-            <button
-              onClick={() => setCurrentView('jobs')}
-              className="w-full text-left px-4 py-3 bg-indigo-50 text-indigo-700 rounded-md hover:bg-indigo-100 font-medium"
-            >
-              Post a New Job
-            </button>
-            <button
-              onClick={() => setCurrentView('applications')}
-              className="w-full text-left px-4 py-3 bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 font-medium"
-            >
-              Review Applications
-            </button>
-            <button
-              onClick={() => setCurrentView('jobs')}
-              className="w-full text-left px-4 py-3 bg-gray-50 text-gray-700 rounded-md hover:bg-gray-100 font-medium"
-            >
-              Manage Existing Jobs
-            </button>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between py-2 border-b">
-              <span className="text-sm text-gray-600">New applications received</span>
-              <span className="text-sm font-medium text-gray-900">{stats.pendingApplications}</span>
-            </div>
-            <div className="flex items-center justify-between py-2 border-b">
-              <span className="text-sm text-gray-600">Jobs requiring attention</span>
-              <span className="text-sm font-medium text-gray-900">{stats.totalJobs - stats.activeJobs}</span>
-            </div>
-            <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-gray-600">Active job postings</span>
-              <span className="text-sm font-medium text-gray-900">{stats.activeJobs}</span>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    )
+  }
 
-  const renderContent = () => {
-    switch (currentView) {
-      case 'overview':
-        return renderOverview();
-      case 'jobs':
-        return (
-          <JobManagementList
-            onJobSelect={handleJobSelect}
-          />
-        );
-      case 'applications':
-        return (
-          <ApplicationManagement
-            selectedJobId={selectedJob?.id}
-            selectedJobTitle={selectedJob?.title}
-            onBack={selectedJob ? handleBackToJobs : undefined}
-          />
-        );
-      default:
-        return renderOverview();
-    }
-  };
+  // --- Main Layout ---
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {renderNavigation()}
-      <div className="flex">
-        {renderSidebar()}
-        <main className="flex-1 p-6">
-          {renderContent()}
+    <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
+      <Navbar />
+
+      <div className="flex flex-1 overflow-hidden">
+        
+        {/* Hoverable Sidebar */}
+        <aside className="hidden md:flex flex-col bg-white border-r border-gray-200 h-[calc(100vh-64px)] sticky top-16 w-20 hover:w-64 transition-all duration-300 ease-in-out group z-20 shadow-lg hover:shadow-xl">
+          <div className="flex-1 py-6 flex flex-col gap-2 overflow-y-auto">
+            {SIDEBAR_ITEMS.map((item) => {
+              // Determine active state logic
+              const isActive = currentView === item.id || (item.id === 'applications' && selectedJob !== null)
+
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    if (item.id === 'applications') setSelectedJob(null)
+                    // Cast string ID to ViewType safely or handle specific logic
+                    if (['overview', 'jobs', 'applications', 'create-job', 'settings'].includes(item.id)) {
+                      setCurrentView(item.id as ViewType)
+                    }
+                  }}
+                  className={`relative flex items-center h-12 px-6 transition-colors duration-200
+                    ${isActive
+                      ? 'text-indigo-600 bg-indigo-50 border-r-4 border-indigo-600' 
+                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                >
+                  <div className="min-w-8 flex items-center justify-center">
+                    <item.icon className="w-6 h-6" />
+                  </div>
+                  <span className="ml-4 font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 delay-75 overflow-hidden">
+                    {item.label}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="p-4 border-t border-gray-100">
+            <button className="flex items-center w-full p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+              <div className="min-w-8 flex items-center justify-center">
+                <LogOut className="w-6 h-6" />
+              </div>
+              <span className="ml-4 font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 overflow-hidden">
+                Sign Out
+              </span>
+            </button>
+          </div>
+        </aside>
+
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-y-auto h-[calc(100vh-64px)] bg-gray-50 p-4 sm:p-8">
+          
+          {/* Content Switcher */}
+          {currentView === 'overview' && renderOverview()}
+          
+          {currentView === 'jobs' && (
+            <div className="max-w-6xl mx-auto">
+               <JobManagementList onJobSelect={handleJobSelect} onPostNewJob={() => setCurrentView('create-job')} />
+            </div>
+          )}
+          
+          {currentView === 'applications' && (
+            <div className="max-w-6xl mx-auto h-full">
+              <ApplicationManagement
+                selectedJobId={selectedJob?.id}
+                selectedJobTitle={selectedJob?.title}
+                onBack={selectedJob ? handleBackToJobs : undefined}
+              />
+            </div>
+          )}
+
+          {currentView === 'create-job' && (
+             <div className="max-w-4xl mx-auto">
+               <JobPostingForm
+                 onJobPosted={() => {
+                   // Add the new job to the jobs list
+                   // This would ideally refresh the jobs list, but for now we'll just navigate back
+                   setCurrentView('jobs');
+                 }}
+                 onCancel={() => setCurrentView('jobs')}
+               />
+             </div>
+          )}
+
+          {currentView === 'settings' && (
+            <RecruiterSettings />
+          )}
+
         </main>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default RecruiterDashboard;
+export default RecruiterDashboard

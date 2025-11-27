@@ -8,6 +8,7 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import DashboardPage from './pages/DashboardPage';
 import JobsPage from './pages/JobsPage';
+import { JobDetailsPage } from './pages/JobDetailsPage';
 import RecruiterDashboard from './pages/RecruiterDashboard';
 import NotFoundPage from './pages/NotFoundPage';
 const App: React.FC = () => {
@@ -31,6 +32,14 @@ const App: React.FC = () => {
               element={
                 <ProtectedRoute>
                   <JobsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/jobs/:id"
+              element={
+                <ProtectedRoute>
+                  <JobDetailsPage />
                 </ProtectedRoute>
               }
             />
