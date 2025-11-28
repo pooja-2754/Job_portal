@@ -1,56 +1,74 @@
 import { API_BASE_URL } from '../config/api';
 
-export interface LoginCredentials {
+export interface CompanyLoginCredentials {
   email: string;
   password: string;
 }
 
-export interface SignupData {
+export interface CompanySignupData {
   name: string;
   email: string;
   password: string;
+  description?: string;
+  website?: string;
+  location?: string;
+  industry?: string;
+  size?: string;
 }
 
-export interface LoginResponse {
+export interface CompanyLoginResponse {
   token: string;
-  user: {
-    id: string;
+  company: {
+    id: number;
+    name?: string;
+    logoUrl?: string;
+    website?: string;
+    description?: string;
+    industry?: string;
+    companySize?: string;
+    verificationStatus?: string;
+    verifiedAt?: string;
     email: string;
-    name: string;
-    role: 'JOB_SEEKER' | 'ADMIN'; // Only JOB_SEEKER and ADMIN roles
+    adminId?: number;
+    adminName?: string;
+    jobCount?: number;
+    createdAt?: string;
+    updatedAt?: string;
   };
-}
-
-export interface SignupResponse {
+  user: null;
   message: string;
 }
 
-export interface ValidateTokenRequest {
+export interface CompanySignupResponse {
+  message: string;
+}
+
+export interface CompanyValidateTokenRequest {
   token: string;
 }
 
-export interface ValidateTokenResponse {
+export interface CompanyValidateTokenResponse {
   valid: boolean;
   email?: string;
-  userId?: string;
+  companyId?: string;
   name?: string;
-  role?: 'JOB_SEEKER' | 'ADMIN'; // Only JOB_SEEKER and ADMIN roles
+  role?: 'COMPANY';
   expirationTime: number;
 }
 
-export interface RefreshTokenRequest {
+export interface CompanyRefreshTokenRequest {
   token: string;
 }
 
-export interface RefreshTokenResponse {
+export interface CompanyRefreshTokenResponse {
   token: string | null;
   message: string;
 }
 
-export const authService = {
-  async login(credentials: LoginCredentials): Promise<LoginResponse> {
+export const companyAuthService = {
+  async login(credentials: CompanyLoginCredentials): Promise<CompanyLoginResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await fetch(`${API_BASE_URL}/companies/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -75,14 +93,14 @@ export const authService = {
     }
   },
 
-  async signup(userData: SignupData): Promise<SignupResponse> {
+  async signup(companyData: CompanySignupData): Promise<CompanySignupResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+      const response = await fetch(`${API_BASE_URL}/companies/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(userData),
+        body: JSON.stringify(companyData),
       });
 
       const data = await response.json();
@@ -102,9 +120,9 @@ export const authService = {
     }
   },
 
-  async validateToken(token: string): Promise<ValidateTokenResponse> {
+  async validateToken(token: string): Promise<CompanyValidateTokenResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/validate`, {
+      const response = await fetch(`${API_BASE_URL}/companies/validate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -123,9 +141,9 @@ export const authService = {
     }
   },
 
-  async refreshToken(token: string): Promise<RefreshTokenResponse> {
+  async refreshToken(token: string): Promise<CompanyRefreshTokenResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      const response = await fetch(`${API_BASE_URL}/companies/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

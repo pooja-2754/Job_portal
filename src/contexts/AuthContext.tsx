@@ -1,34 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { authService, type ValidateTokenResponse, type RefreshTokenResponse } from '../services/authService';
-
-interface User {
-  id: string;
-  email: string;
-  name?: string;
-  role: 'JOB_SEEKER' | 'RECRUITER'; // Add this
-}
-
-interface AuthContextType {
-  user: User | null;
-  token: string | null;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  refreshToken: () => Promise<boolean>;
-}
+import { type EntityType, type User, type AuthContextType } from '../types/auth.types';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export { AuthContext };
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -37,6 +14,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [entityType, setEntityType] = useState<EntityType | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const intervalRef = useRef<number | null>(null);
@@ -50,10 +28,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         id: userData?.id || response.userId || '', // Ensure server returns userId
         email: response.email,
         name: userData?.name || response.name || response.email.split('@')[0],
-        role: userData?.role || response.role || 'JOB_SEEKER' as const // Add role handling
+        role: userData?.role || response.role || 'JOB_SEEKER' as const
       };
       setUser(updatedUser);
+      setEntityType('USER');
+      setIsAuthenticated(true);
       localStorage.setItem('user', JSON.stringify(updatedUser));
+      localStorage.setItem('entityType', 'USER');
       localStorage.setItem('tokenExpiration', response.expirationTime.toString());
       return true;
     }
@@ -76,8 +57,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.setItem('token', response.token);
         
         // Validate the new token to get updated user info and expiration
-        await validateTokenWithServer(response.token, user);
-        return true;
+        const isValid = await validateTokenWithServer(response.token, user);
+        if (isValid) {
+          setIsAuthenticated(true);
+          setupRefreshInterval();
+        }
+        return isValid;
       }
       return false;
     } catch (error) {
@@ -133,13 +118,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         const storedToken = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
+        const storedEntityType = localStorage.getItem('entityType');
         
+        // If we have a company token, don't process in user auth context
+        if (localStorage.getItem('companyToken')) {
+          setIsAuthenticated(false);
+          setUser(null);
+          setToken(null);
+          setEntityType(null);
+          setIsLoading(false);
+          return;
+        }
         
         // Check if we have valid token and user data
         if (!storedToken || !storedUser) {
           setIsAuthenticated(false);
           setUser(null);
           setToken(null);
+          setEntityType(null);
           setIsLoading(false);
           return;
         }
@@ -149,9 +145,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           localStorage.removeItem('user');
           localStorage.removeItem('token');
           localStorage.removeItem('tokenExpiration');
+          localStorage.removeItem('entityType');
           setIsAuthenticated(false);
           setUser(null);
           setToken(null);
+          setEntityType(null);
           setIsLoading(false);
           return;
         }
@@ -168,9 +166,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           localStorage.removeItem('user');
           localStorage.removeItem('token');
           localStorage.removeItem('tokenExpiration');
+          localStorage.removeItem('entityType');
           setIsAuthenticated(false);
           setUser(null);
           setToken(null);
+          setEntityType(null);
           setIsLoading(false);
           return;
         }
@@ -208,6 +208,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (isValid) {
           setUser(userData);
           setToken(storedToken);
+          setEntityType(storedEntityType as EntityType || 'USER');
           setIsAuthenticated(true);
           setupRefreshInterval();
         } else {
@@ -223,8 +224,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             localStorage.removeItem('tokenExpiration');
+            localStorage.removeItem('entityType');
             setUser(null);
             setToken(null);
+            setEntityType(null);
             setIsAuthenticated(false);
           }
         }
@@ -232,6 +235,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.error('Unexpected error during auth initialization:', error);
         setUser(null);
         setToken(null);
+        setEntityType(null);
         setIsAuthenticated(false);
       } finally {
         setIsLoading(false);
@@ -255,11 +259,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       setToken(jwtToken);
       setUser(userData);
+      setEntityType('USER');
       setIsAuthenticated(true);
       
       // Store in localStorage with validation
       localStorage.setItem('token', jwtToken);
       localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('entityType', 'USER');
       
       console.log('Stored user data:', JSON.stringify(userData)); // Debug log
       
@@ -302,15 +308,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     setUser(null);
     setToken(null);
+    setEntityType(null);
     setIsAuthenticated(false);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('tokenExpiration');
+    localStorage.removeItem('entityType');
   };
 
   const value = {
     user,
     token,
+    entityType,
     login,
     signup,
     logout,

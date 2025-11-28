@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import type { Job, JobType } from '../types/job.types';
+import type { Job, JobType, Company } from '../types/job.types';
 import { jobService } from '../services/jobService';
+import { companyService } from '../services/companyService';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 interface JobPostingFormProps {
@@ -19,6 +20,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     title: initialJob?.title || '',
+    companyId: initialJob?.company?.id || 0,
     company: initialJob?.company || { id: 0, name: '' },
     location: initialJob?.location || { city: '', state: '', country: '' },
     type: initialJob?.type || 'Full-Time' as JobType,
@@ -35,6 +37,31 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [skillInput, setSkillInput] = useState('');
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
+  const [companyError, setCompanyError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        setIsLoadingCompanies(true);
+        setCompanyError(null);
+        const verifiedCompanies = await companyService.getVerifiedCompanies();
+        setCompanies(verifiedCompanies);
+        
+        // If no verified companies, show error
+        if (verifiedCompanies.length === 0) {
+          setCompanyError('You must have at least one verified company to post a job. Please create and verify a company first.');
+        }
+      } catch (err) {
+        setCompanyError(err instanceof Error ? err.message : 'Failed to load companies. Please try again.');
+      } finally {
+        setIsLoadingCompanies(false);
+      }
+    };
+
+    fetchCompanies();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -44,11 +71,14 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
     }));
   };
 
-  const handleCompanyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = e.target;
+  const handleCompanyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const companyId = parseInt(e.target.value);
+    const selectedCompany = companies.find(c => c.id === companyId);
+    
     setFormData(prev => ({
       ...prev,
-      company: { ...prev.company, name: value }
+      companyId,
+      company: selectedCompany || { id: 0, name: '' }
     }));
   };
 
@@ -127,6 +157,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
     try {
       const jobData = {
         ...formData,
+        company: formData.company,
         postedDate: new Date().toISOString(),
       };
 
@@ -143,6 +174,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
       if (!initialJob) {
         setFormData({
           title: '',
+          companyId: 0,
           company: { id: 0, name: '' },
           location: { city: '', state: '', country: '' },
           type: 'Full-Time',
@@ -211,18 +243,39 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
         </div>
 
         <div>
-          <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="companyId" className="block text-sm font-medium text-gray-700 mb-1">
             Company *
           </label>
-          <input
-            type="text"
-            id="company"
-            name="company"
-            value={typeof formData.company === 'object' ? formData.company.name : formData.company}
-            onChange={handleCompanyChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+          {isLoadingCompanies ? (
+            <div className="flex items-center justify-center py-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
+              <span className="ml-2 text-sm text-gray-500">Loading companies...</span>
+            </div>
+          ) : companyError ? (
+            <div className="text-red-600 text-sm p-2 bg-red-50 border border-red-200 rounded">
+              {companyError}
+            </div>
+          ) : companies.length === 0 ? (
+            <div className="text-yellow-600 text-sm p-2 bg-yellow-50 border border-yellow-200 rounded">
+              No verified companies found. Please create and verify a company first.
+            </div>
+          ) : (
+            <select
+              id="companyId"
+              name="companyId"
+              value={formData.companyId}
+              onChange={handleCompanyChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="">Select a company</option>
+              {companies.map((company) => (
+                <option key={company.id} value={company.id}>
+                  {company.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         <div>

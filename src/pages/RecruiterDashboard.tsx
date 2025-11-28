@@ -1,27 +1,32 @@
 import React, { useState, useEffect } from 'react'
 import { jobService } from '../services/jobService'
-import type { Job } from '../types/job.types'
+import type { Job, Company } from '../types/job.types'
 import JobManagementList from '../components/JobManagementList'
 import ApplicationManagement from '../components/ApplicationManagement'
 import JobPostingForm from '../components/JobPostingForm'
 import RecruiterSettings from '../components/RecruiterSettings'
+import { CompanyList } from '../components/CompanyList'
+import { CompanyCreateForm } from '../components/CompanyCreateForm'
+import { CompanyEditForm } from '../components/CompanyEditForm'
 import { Navbar } from '../components/Navbar'
-import { 
-  LayoutDashboard, 
-  Briefcase, 
-  Users, 
-  PlusCircle, 
-  Settings, 
-  LogOut, 
-  TrendingUp, 
+import { RecruiterRoute } from '../components/RoleBasedRoute'
+import {
+  LayoutDashboard,
+  Briefcase,
+  Users,
+  PlusCircle,
+  Settings,
+  LogOut,
+  TrendingUp,
   FileText,
   AlertCircle,
   Clock,
-  CheckCircle2
+  CheckCircle2,
+  Building
 } from 'lucide-react'
 
 // Define View Types
-type ViewType = 'overview' | 'jobs' | 'applications' | 'create-job' | 'settings'
+type ViewType = 'overview' | 'jobs' | 'applications' | 'create-job' | 'companies' | 'create-company' | 'edit-company' | 'settings'
 
 // Define Stats Interface
 interface DashboardStats {
@@ -36,6 +41,7 @@ const SIDEBAR_ITEMS = [
   { id: 'overview', icon: LayoutDashboard, label: 'Overview' },
   { id: 'jobs', icon: Briefcase, label: 'Manage Jobs' },
   { id: 'applications', icon: Users, label: 'Applications' },
+  { id: 'companies', icon: Building, label: 'My Companies' },
   { id: 'create-job', icon: PlusCircle, label: 'Post New Job' },
   { id: 'settings', icon: Settings, label: 'Settings' },
 ]
@@ -43,6 +49,8 @@ const SIDEBAR_ITEMS = [
 const RecruiterDashboard: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewType>('overview')
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
+  const [companyRefreshTrigger, setCompanyRefreshTrigger] = useState(0)
   
   // Stats State
   const [stats, setStats] = useState<DashboardStats>({
@@ -81,6 +89,25 @@ const RecruiterDashboard: React.FC = () => {
   const handleBackToJobs = () => {
     setSelectedJob(null)
     setCurrentView('jobs')
+  }
+
+  const handleCompanySelect = (company: Company) => {
+    setSelectedCompany(company)
+    setCurrentView('edit-company')
+  }
+
+  const handleCompanyCreated = () => {
+    setCompanyRefreshTrigger(prev => prev + 1)
+    setCurrentView('companies')
+  }
+
+  const handleCompanyUpdated = () => {
+    setCompanyRefreshTrigger(prev => prev + 1)
+    setCurrentView('companies')
+  }
+
+  const handleCompanyDeleted = () => {
+    setCompanyRefreshTrigger(prev => prev + 1)
   }
 
   // --- Render Sections ---
@@ -162,6 +189,13 @@ const RecruiterDashboard: React.FC = () => {
                 <Users className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
               </button>
               <button
+                onClick={() => setCurrentView('companies')}
+                className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-purple-50 text-gray-700 hover:text-purple-700 rounded-lg transition-colors group"
+              >
+                <span className="font-medium">Manage Companies</span>
+                <Building className="w-4 h-4 text-gray-400 group-hover:text-purple-600" />
+              </button>
+              <button
                 onClick={() => setCurrentView('create-job')}
                 className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-green-50 text-gray-700 hover:text-green-700 rounded-lg transition-colors group"
               >
@@ -222,15 +256,20 @@ const RecruiterDashboard: React.FC = () => {
           <div className="flex-1 py-6 flex flex-col gap-2 overflow-y-auto">
             {SIDEBAR_ITEMS.map((item) => {
               // Determine active state logic
-              const isActive = currentView === item.id || (item.id === 'applications' && selectedJob !== null)
+              const isActive = currentView === item.id ||
+                           (item.id === 'applications' && selectedJob !== null) ||
+                           (item.id === 'companies' && ['create-company', 'edit-company'].includes(currentView))
 
               return (
                 <button
                   key={item.id}
                   onClick={() => {
                     if (item.id === 'applications') setSelectedJob(null)
+                    if (item.id === 'companies') {
+                      setSelectedCompany(null)
+                    }
                     // Cast string ID to ViewType safely or handle specific logic
-                    if (['overview', 'jobs', 'applications', 'create-job', 'settings'].includes(item.id)) {
+                    if (['overview', 'jobs', 'applications', 'companies', 'create-job', 'settings'].includes(item.id)) {
                       setCurrentView(item.id as ViewType)
                     }
                   }}
@@ -298,6 +337,50 @@ const RecruiterDashboard: React.FC = () => {
              </div>
           )}
 
+          {currentView === 'companies' && (
+            <div className="max-w-6xl mx-auto">
+              <div className="mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">My Companies</h2>
+                    <p className="text-gray-600 mt-1">Manage your company profiles and verification status.</p>
+                  </div>
+                  <button
+                    onClick={() => setCurrentView('create-company')}
+                    className="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors shadow-sm"
+                  >
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Add New Company
+                  </button>
+                </div>
+              </div>
+              <CompanyList
+                refreshTrigger={companyRefreshTrigger}
+                onEdit={handleCompanySelect}
+                onDelete={handleCompanyDeleted}
+              />
+            </div>
+          )}
+
+          {currentView === 'create-company' && (
+            <div className="max-w-4xl mx-auto">
+              <CompanyCreateForm
+                onSuccess={handleCompanyCreated}
+                onCancel={() => setCurrentView('companies')}
+              />
+            </div>
+          )}
+
+          {currentView === 'edit-company' && selectedCompany && (
+            <div className="max-w-4xl mx-auto">
+              <CompanyEditForm
+                companyId={selectedCompany.id}
+                onSuccess={handleCompanyUpdated}
+                onCancel={() => setCurrentView('companies')}
+              />
+            </div>
+          )}
+
           {currentView === 'settings' && (
             <RecruiterSettings />
           )}
@@ -308,4 +391,11 @@ const RecruiterDashboard: React.FC = () => {
   )
 }
 
-export default RecruiterDashboard
+// Wrap the component with RecruiterRoute for access control
+const RecruiterDashboardWithAuth: React.FC = () => (
+  <RecruiterRoute>
+    <RecruiterDashboard />
+  </RecruiterRoute>
+)
+
+export default RecruiterDashboardWithAuth

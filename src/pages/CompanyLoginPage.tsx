@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useCompanyAuth } from '../hooks/useCompanyAuth';
 
-const LoginPage: React.FC = () => {
+const CompanyLoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  const { login, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { login, isAuthenticated, isLoading: authLoading } = useCompanyAuth();
   const navigate = useNavigate();
   
   // Redirect if already authenticated
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      navigate('/jobs', { replace: true });
+      navigate('/company-dashboard', { replace: true });
     }
   }, [isAuthenticated, authLoading, navigate]);
 
@@ -26,7 +26,6 @@ const LoginPage: React.FC = () => {
     try {
       await login(email, password);
       // Let the useEffect handle the redirect after authentication state is updated
-      // navigate('/jobs');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
@@ -50,10 +49,10 @@ const LoginPage: React.FC = () => {
         <div className="max-w-md w-full space-y-8">
           <div>
             <h2 className="text-3xl font-bold text-gray-900 mb-2">
-              Welcome back
+              Company Login
             </h2>
             <p className="text-gray-600">
-              Sign in to your account to continue
+              Sign in to your company account to manage jobs and applications
             </p>
           </div>
           
@@ -67,7 +66,7 @@ const LoginPage: React.FC = () => {
             <div className="space-y-4">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Email address
+                  Company email
                 </label>
                 <input
                   id="email"
@@ -76,7 +75,7 @@ const LoginPage: React.FC = () => {
                   autoComplete="email"
                   required
                   className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors"
-                  placeholder="Enter your email"
+                  placeholder="Enter your company email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -125,58 +124,52 @@ const LoginPage: React.FC = () => {
                 disabled={isLoading}
                 className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
               >
-                {isLoading ? 'Signing in...' : 'Sign in'}
+                {isLoading ? 'Signing in...' : 'Sign in as Company'}
               </button>
             </div>
 
             <div className="text-center">
-              <p className="text-sm text-gray-600">
-                Don't have an account?{' '}
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                <p className="text-sm text-gray-700 mb-2">
+                  New to our platform?
+                </p>
                 <Link
-                  to="/signup"
+                  to="/company-signup"
+                  className="inline-flex items-center  text-green-600 hover:text-green-500 text-sm font-semibold bg-white px-4 py-2 rounded-lg border border-green-300 shadow-sm"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Create Company Account
+                </Link>
+              </div>
+              <p className="text-sm text-gray-600">
+                Looking for jobs?{' '}
+                <Link
+                  to="/login"
                   className="font-medium text-indigo-600 hover:text-indigo-500"
                 >
-                  Sign up as Job Seeker
+                  Sign in as Job Seeker
                 </Link>
               </p>
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <p className="text-sm text-gray-600 mb-2">
-                  Are you recruiting?
-                </p>
-                <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                  <Link
-                    to="/company-login"
-                    className="font-medium text-indigo-600 hover:text-indigo-500 text-sm"
-                  >
-                    Sign in as Company
-                  </Link>
-                  <span className="text-gray-400 hidden sm:inline">|</span>
-                  <Link
-                    to="/company-signup"
-                    className=" text-green-600 hover:text-green-500 text-sm font-semibold"
-                  >
-                    Create Company Account
-                  </Link>
-                </div>
-              </div>
             </div>
           </form>
         </div>
       </div>
 
       {/* Right side - Image placeholder (hidden on smaller screens) */}
-      <div className="hidden lg:flex lg:w-1/2 bg-linear-to-br from-indigo-500 to-purple-600 items-center justify-center p-12">
+      <div className="hidden lg:flex lg:w-1/2 bg-linear-to-br from-blue-500 to-indigo-600 items-center justify-center p-12">
         <div className="text-center text-white">
           <div className="mb-8">
             <div className="w-64 h-64 mx-auto bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
               <svg className="w-32 h-32 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 13.255A7.977 7.977 0 0112 21c-2.7 0-5.1-1.3-6.6-3.4m12.6 3.4A7.977 7.977 0 0112 21c-4.4 0-8-3.6-8-8a8 8 0 018-8c4.4 0 8 3.6 8 8 0 1.4-.4 2.7-1 3.9m-7 4.1V7m0 0l3 3m-3-3l-3 3" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
             </div>
           </div>
-          <h2 className="text-3xl font-bold mb-4">Find Your Dream Job</h2>
+          <h2 className="text-3xl font-bold mb-4">Manage Your Company</h2>
           <p className="text-lg opacity-90 max-w-md mx-auto">
-            Connect with top employers and discover opportunities that match your skills and aspirations.
+            Post jobs, review applications, and find the perfect candidates for your team.
           </p>
         </div>
       </div>
@@ -184,4 +177,4 @@ const LoginPage: React.FC = () => {
   );
 };
 
-export default LoginPage;
+export default CompanyLoginPage;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 const SignupPage: React.FC = () => {
   const [name, setName] = useState('');
@@ -162,13 +162,27 @@ const SignupPage: React.FC = () => {
                   Sign in
                 </Link>
               </p>
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <p className="text-sm text-gray-600 mb-2">
+                  Are you a company looking to hire?
+                </p>
+                <Link
+                  to="/company-signup"
+                  className="inline-flex items-center  text-green-600 hover:text-green-500 text-sm font-semibold"
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  Create Company Account
+                </Link>
+              </div>
             </div>
           </form>
         </div>
       </div>
 
       {/* Right side - Image placeholder (hidden on smaller screens) */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-purple-500 to-pink-600 items-center justify-center p-12">
+      <div className="hidden lg:flex lg:w-1/2 bg-linear-to-br from-purple-500 to-pink-600 items-center justify-center p-12">
         <div className="text-center text-white">
           <div className="mb-8">
             <div className="w-64 h-64 mx-auto bg-white bg-opacity-20 rounded-lg flex items-center justify-center">

@@ -52,12 +52,37 @@ export interface Salary {
 }
 
 
+export type CompanyStatus = 'PENDING' | 'VERIFIED' | 'REJECTED';
+
 export interface Company {
   id: number;
   name: string;
   logoUrl?: string;
   website?: string;
   description?: string;
+  industry?: string;
+  size?: string;
+  location?: string;
+  ownerId?: string;
+  status?: CompanyStatus;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CompanyCreateRequest {
+  name: string;
+  description: string;
+  website: string;
+  location: string;
+  industry?: string;
+  size?: string;
+}
+
+export interface CompanyUpdateRequest {
+  name?: string;
+  description?: string;
+  website?: string;
+  location?: string;
   industry?: string;
   size?: string;
 }
