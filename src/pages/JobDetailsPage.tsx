@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Building2, MapPin, Clock, DollarSign, Calendar } from 'lucide-react'
+import { ArrowLeft, Building2, MapPin, Clock, DollarSign, Calendar, CheckCircle } from 'lucide-react'
 import { Navbar } from '../components/Navbar'
+import { JobApplicationForm } from '../components/JobApplicationForm'
 import { jobService } from '../services/jobService'
 import DOMPurify from 'dompurify'
 import type { Job } from '../types/job.types'
@@ -11,6 +12,8 @@ export const JobDetailsPage = () => {
   const navigate = useNavigate()
   const [job, setJob] = useState<Job | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showApplicationForm, setShowApplicationForm] = useState(false)
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -29,6 +32,20 @@ export const JobDetailsPage = () => {
 
     fetchJob()
   }, [id])
+
+  const handleApplyNow = () => {
+    setShowApplicationForm(true)
+  }
+
+  const handleCloseApplicationForm = () => {
+    setShowApplicationForm(false)
+  }
+
+  const handleApplicationSuccess = () => {
+    setShowSuccessMessage(true)
+    setShowApplicationForm(false)
+    setTimeout(() => setShowSuccessMessage(false), 5000)
+  }
 
   if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>
 
@@ -67,7 +84,10 @@ export const JobDetailsPage = () => {
                       <p className="text-xl text-gray-600">{job.company.name}</p>
                     </div>
                   </div>
-                  <button className="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors">
+                  <button
+                    onClick={handleApplyNow}
+                    className="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
                     Apply Now
                   </button>
                 </div>
@@ -175,7 +195,10 @@ export const JobDetailsPage = () => {
               </div>
 
               <div className="mt-6 space-y-3">
-                <button className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                <button
+                  onClick={handleApplyNow}
+                  className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                >
                   Apply for this Position
                 </button>
                 <button className="w-full border border-gray-300 text-gray-700 font-medium py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors">
@@ -186,6 +209,27 @@ export const JobDetailsPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Application Form Modal */}
+      {job && (
+        <JobApplicationForm
+          job={job}
+          isOpen={showApplicationForm}
+          onClose={handleCloseApplicationForm}
+          onSuccess={handleApplicationSuccess}
+        />
+      )}
+
+      {/* Success Message */}
+      {showSuccessMessage && (
+        <div className="fixed bottom-4 right-4 bg-green-50 border border-green-200 rounded-lg p-4 shadow-lg z-[60] flex items-center gap-3">
+          <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
+          <div>
+            <p className="text-green-800 font-medium">Application submitted successfully!</p>
+            <p className="text-green-600 text-sm">Your application has been received and is being reviewed.</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

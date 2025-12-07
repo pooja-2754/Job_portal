@@ -179,3 +179,32 @@ export interface Location {
     lng: number;
   };
 }
+
+export interface ApplicationRequest {
+  jobId: number;
+  applicantName: string;
+  applicantEmail: string;
+  applicantPhone?: string;
+  resumeUrl?: string;
+  coverLetter?: string;
+  experience?: string;
+  education?: string;
+}
+
+export interface ApplicationResponse {
+  id: number;
+  jobId: number;
+  jobTitle: string;
+  jobCompany: string;
+  applicantName: string;
+  applicantEmail: string;
+  applicantPhone?: string;
+  resumeUrl?: string;
+  coverLetter?: string;
+  experience?: string;
+  education?: string;
+  status: string;
+  statusDisplayName: string;
+  appliedDate: string;
+  updatedAt: string;
+}
