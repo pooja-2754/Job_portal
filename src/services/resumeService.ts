@@ -76,4 +76,29 @@ export const resumeService = {
       throw error;
     }
   },
+
+  async setPrimaryResume(resumeId: number, token: string): Promise<Resume> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/resumes/${resumeId}/set-primary`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to set primary resume with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Network error. Please check your connection and try again.');
+      }
+      throw error;
+    }
+  },
 };

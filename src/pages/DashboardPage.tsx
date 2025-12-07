@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { Navbar } from '../components/Navbar'
 import ResumeManagement from '../components/ResumeManagement'
+import ApplicationsManagement from '../components/ApplicationsManagement'
 import {
   User,
   Briefcase,
@@ -111,7 +112,7 @@ const DashboardPage: React.FC = () => {
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-gray-200/60">
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                  {activeTab === 'Resumes' ? 'Resume Management' : 'Dashboard'}
+                  {activeTab === 'Resumes' ? 'Resume Management' : activeTab === 'Applications' ? 'My Applications' : 'Dashboard'}
                 </h1>
                 <p className="text-gray-500 mt-1">
                   Welcome back, {user?.name || 'User'}.
@@ -128,6 +129,8 @@ const DashboardPage: React.FC = () => {
             {/* Content based on active tab */}
             {activeTab === 'Resumes' ? (
               <ResumeManagement />
+            ) : activeTab === 'Applications' ? (
+              <ApplicationsManagement />
             ) : (
               <>
                 {/* Stats Grid */}

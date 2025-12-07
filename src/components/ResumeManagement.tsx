@@ -2,17 +2,19 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { resumeService } from '../services/resumeService';
 import type { Resume } from '../types/resume.types';
-import { 
-  Upload, 
-  FileText, 
-  Eye, 
-  Download,  
+import {
+  Upload,
+  FileText,
+  Eye,
+  Download,
   Plus,
   X,
   Loader2,
   CheckCircle,
   AlertCircle,
-  File
+  File,
+  Star,
+  Crown
 } from 'lucide-react';
 
 const ResumeManagement: React.FC = () => {
@@ -24,6 +26,7 @@ const ResumeManagement: React.FC = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [uploadMessage, setUploadMessage] = useState('');
+  const [isSettingPrimary, setIsSettingPrimary] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -108,8 +111,41 @@ const ResumeManagement: React.FC = () => {
     window.open(resume.fileUrl, '_blank');
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+  const handleSetPrimary = async (resumeId: number) => {
+    if (!token) return;
+
+    try {
+      setIsSettingPrimary(resumeId);
+      await resumeService.setPrimaryResume(resumeId, token);
+      
+      // Update the resumes list to reflect the change
+      setResumes(prevResumes =>
+        prevResumes.map(resume => ({
+          ...resume,
+          isPrimary: resume.id === resumeId
+        }))
+      );
+    } catch (error) {
+      console.error('Error setting primary resume:', error);
+      setUploadStatus('error');
+      setUploadMessage(error instanceof Error ? error.message : 'Failed to set primary resume');
+    } finally {
+      setIsSettingPrimary(null);
+    }
+  };
+
+  const formatDate = (dateValue: string | number[]) => {
+    let date: Date;
+    
+    if (Array.isArray(dateValue)) {
+      // Handle array format: [year, month, day, hour, minute, second, nanosecond]
+      const [year, month, day, hour = 0, minute = 0, second = 0] = dateValue;
+      date = new Date(year, month - 1, day, hour, minute, second); // month is 0-indexed in Date constructor
+    } else {
+      // Handle string format
+      date = new Date(dateValue);
+    }
+    
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -242,12 +278,22 @@ const ResumeManagement: React.FC = () => {
             {resumes.map((resume) => (
               <div
                 key={resume.id}
-                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                className={`flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors ${
+                  resume.isPrimary ? 'border-blue-300 bg-blue-50' : 'border-gray-200'
+                }`}
               >
                 <div className="flex items-center space-x-3">
                   {getFileIcon(resume.name)}
-                  <div>
-                    <p className="font-medium text-gray-900">{resume.name}</p>
+                  <div className="flex-1">
+                    <div className="flex items-center">
+                      <p className="font-medium text-gray-900">{resume.name}</p>
+                      {resume.isPrimary && (
+                        <div className="ml-2 flex items-center text-blue-600">
+                          <Crown className="w-4 h-4 mr-1" />
+                          <span className="text-xs font-medium">Primary</span>
+                        </div>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-500">
                       Uploaded on {formatDate(resume.createdAt)}
                     </p>
@@ -255,6 +301,20 @@ const ResumeManagement: React.FC = () => {
                 </div>
                 
                 <div className="flex items-center space-x-2">
+                  {!resume.isPrimary && (
+                    <button
+                      onClick={() => handleSetPrimary(resume.id)}
+                      disabled={isSettingPrimary === resume.id}
+                      className="p-2 text-gray-500 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Set as Primary"
+                    >
+                      {isSettingPrimary === resume.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Star className="w-4 h-4" />
+                      )}
+                    </button>
+                  )}
                   <button
                     onClick={() => handlePreview(resume)}
                     className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"

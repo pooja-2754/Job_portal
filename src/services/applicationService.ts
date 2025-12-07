@@ -1,5 +1,6 @@
 import { API_BASE_URL } from '../config/api';
 import type { ApplicationRequest, ApplicationResponse } from '../types/job.types';
+import type { ApplicationsResponse, ApplicationsQueryParams } from '../types/application.types';
 
 export const applicationService = {
   async submitApplication(application: ApplicationRequest, token: string): Promise<ApplicationResponse> {
@@ -29,6 +30,34 @@ export const applicationService = {
       }
       
       const errorMessage = errorData.message || errorData.error || 'Failed to submit application';
+      throw new Error(errorMessage);
+    }
+    
+    return response.json();
+  },
+
+  async fetchApplications(token: string, params: ApplicationsQueryParams = {}): Promise<ApplicationsResponse> {
+    const queryParams = new URLSearchParams();
+    
+    // Add query parameters if provided
+    if (params.page !== undefined) queryParams.append('page', params.page.toString());
+    if (params.size !== undefined) queryParams.append('size', params.size.toString());
+    if (params.sortBy) queryParams.append('sortBy', params.sortBy);
+    if (params.sortDir) queryParams.append('sortDir', params.sortDir);
+    
+    const url = `${API_BASE_URL}/applications/candidate/my-applications${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.message || errorData.error || 'Failed to fetch applications';
       throw new Error(errorMessage);
     }
     

@@ -4,7 +4,8 @@ export interface Resume {
   fileUrl: string;
   previewUrl: string;
   cloudinaryId: string;
-  createdAt: string;
+  createdAt: string | number[];
+  isPrimary?: boolean;
   user?: {
     id: number;
     name: string;
@@ -18,7 +19,8 @@ export interface UploadResumeResponse {
   fileUrl: string;
   previewUrl: string;
   cloudinaryId: string;
-  createdAt: string;
+  createdAt: string | number[];
+  isPrimary?: boolean;
   user: {
     id: number;
     name: string;
