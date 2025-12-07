@@ -387,23 +387,26 @@ const CompanyDashboardOverview: React.FC = () => {
              </div>
             ) : (
               <div className="space-y-4">
-                {stats!.topJobsByApplications.slice(0, 5).map((item, index) => (
-                  <div key={item.job.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer" onClick={() => navigate(`/company-dashboard/jobs/${item.job.id}`)}>
-                    <div className="flex items-center">
-                      <div className="bg-green-100 p-2 rounded-full mr-3 flex items-center justify-center text-green-600 font-bold text-sm w-7 h-7">
-                        {index + 1}
+                {stats!.topJobsByApplications
+                  .filter(item => item.job) // Filter out items where job is undefined
+                  .slice(0, 5)
+                  .map((item, index) => (
+                    <div key={item.job.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer" onClick={() => navigate(`/company-dashboard/jobs/${item.job.id}`)}>
+                      <div className="flex items-center">
+                        <div className="bg-green-100 p-2 rounded-full mr-3 flex items-center justify-center text-green-600 font-bold text-sm w-7 h-7">
+                          {index + 1}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{item.job.title}</p>
+                          <p className="text-sm text-gray-600">{item.applicationCount} applications</p>
+                          <p className="text-xs text-gray-500">
+                            Posted {item.job.postedDate ? new Date(item.job.postedDate).toLocaleDateString() : 'Recently'}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{item.job.title}</p>
-                        <p className="text-sm text-gray-600">{item.applicationCount} applications</p>
-                        <p className="text-xs text-gray-500">
-                          Posted {item.job.postedDate ? new Date(item.job.postedDate).toLocaleDateString() : 'Recently'}
-                        </p>
-                      </div>
+                      <Eye className="w-4 h-4 text-gray-400" />
                     </div>
-                    <Eye className="w-4 h-4 text-gray-400" />
-                  </div>
-                ))}
+                  ))}
               </div>
             )}
           </div>
