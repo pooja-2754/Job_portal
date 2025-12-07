@@ -102,28 +102,6 @@ export function Navbar() {
                         <LayoutDashboard className="w-4 h-4 mr-2" />
                         Dashboard
                       </button>
-                      <button
-                        onClick={() => handleNavigation('/company-jobs')}
-                        className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                          isActive('/company-jobs')
-                            ? 'text-blue-600 bg-blue-50'
-                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                        }`}
-                      >
-                        <Briefcase className="w-4 h-4 mr-2" />
-                        My Jobs
-                      </button>
-                      <button
-                        onClick={() => handleNavigation('/company-applications')}
-                        className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                          isActive('/company-applications')
-                            ? 'text-blue-600 bg-blue-50'
-                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                        }`}
-                      >
-                        <Search className="w-4 h-4 mr-2" />
-                        Applications
-                      </button>
                     </>
                   ) : (
                     <>

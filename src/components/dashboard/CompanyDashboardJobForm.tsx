@@ -1,28 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
-import type { Job, JobType, JobStatus, WorkplaceType, ExperienceLevel, SalaryPeriod, Company, JobApiRequest } from '../types/job.types';
-import { jobService } from '../services/jobService';
-import { companyService } from '../services/companyService';
+import type { Job, JobType, JobStatus, WorkplaceType, ExperienceLevel, SalaryPeriod, JobApiRequest } from '../../types/job.types';
+import { companyJobService } from '../../services/companyJobService';
+import { useCompanyAuth } from '../../hooks/useCompanyAuth';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
-interface JobPostingFormProps {
+interface CompanyDashboardJobFormProps {
   onJobPosted?: (job: Job) => void;
   onCancel?: () => void;
   initialJob?: Job;
 }
 
-
-const JobPostingForm: React.FC<JobPostingFormProps> = ({ 
-  onJobPosted, 
-  onCancel, 
-  initialJob 
+const CompanyDashboardJobForm: React.FC<CompanyDashboardJobFormProps> = ({
+  onJobPosted,
+  onCancel,
+  initialJob
 }) => {
+  const { company } = useCompanyAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     title: initialJob?.title || '',
-    companyId: initialJob?.company?.id || 0,
-    company: initialJob?.company || { id: 0, name: '' },
+    companyId: initialJob?.company?.id || (company ? Number(company.id) : 0),
+    company: initialJob?.company || (company ? {
+      id: Number(company.id),
+      name: company.name || ''
+    } : { id: 0, name: '' }),
     location: initialJob?.location || { city: '', state: '', country: '', zipCode: '', coordinates: undefined },
     type: initialJob?.type || 'FULL_TIME' as JobType,
     status: initialJob?.status || 'PUBLISHED' as JobStatus,
@@ -47,35 +50,21 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [skillInput, setSkillInput] = useState('');
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
-  const [companyError, setCompanyError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  // Add debug flag to track API calls
-  const [apiCallMade, setApiCallMade] = useState(false);
-
   useEffect(() => {
-    const fetchCompanies = async () => {
-      try {
-        setIsLoadingCompanies(true);
-        setCompanyError(null);
-        const verifiedCompanies = await companyService.getVerifiedCompanies();
-        setCompanies(verifiedCompanies);
-        
-        // If no verified companies, show error
-        if (verifiedCompanies.length === 0) {
-          setCompanyError('You must have at least one verified company to post a job. Please create and verify a company first.');
+    // Update form data when company information is available
+    if (company && !initialJob) {
+      setFormData(prev => ({
+        ...prev,
+        companyId: Number(company.id),
+        company: {
+          id: Number(company.id),
+          name: company.name || ''
         }
-      } catch (err) {
-        setCompanyError(err instanceof Error ? err.message : 'Failed to load companies. Please try again.');
-      } finally {
-        setIsLoadingCompanies(false);
-      }
-    };
-
-    fetchCompanies();
-  }, []);
+      }));
+    }
+  }, [company, initialJob]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -85,16 +74,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
     }));
   };
 
-  const handleCompanyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const companyId = parseInt(e.target.value);
-    const selectedCompany = companies.find(c => c.id === companyId);
-    
-    setFormData(prev => ({
-      ...prev,
-      companyId,
-      company: selectedCompany || { id: 0, name: '' }
-    }));
-  };
+  // Company is fixed based on authenticated user, no need for change handler
 
   const handleLocationFieldChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -108,44 +88,43 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
   };
 
 
-
   const handleDescriptionChange = (value: string) => {
-    // ReactQuill passes HTML value directly
+    // ReactQuill passes the HTML value directly
     const cleanValue = (value === '<p><br></p>' || value === '<p></p>') ? '' : value;
     setFormData(prev => ({
       ...prev,
-      description: cleanValue.replace(/<[^>]*>/g, ''), // Strip HTML tags for plain text description
-      descriptionHtml: cleanValue
+      descriptionHtml: cleanValue,
+      description: cleanValue.replace(/<[^>]*>/g, '') // Strip HTML tags for plain text description
     }));
   };
 
   const handleRequirementsChange = (value: string) => {
-    // ReactQuill passes HTML value directly
+    // ReactQuill passes the HTML value directly
     const cleanValue = (value === '<p><br></p>' || value === '<p></p>') ? '' : value;
     setFormData(prev => ({
       ...prev,
-      requirements: cleanValue.replace(/<[^>]*>/g, ''), // Strip HTML tags for plain text
-      requirementsHtml: cleanValue
+      requirementsHtml: cleanValue,
+      requirements: cleanValue.replace(/<[^>]*>/g, '') // Strip HTML tags for plain text
     }));
   };
 
   const handleResponsibilitiesChange = (value: string) => {
-    // ReactQuill passes HTML value directly
+    // ReactQuill passes the HTML value directly
     const cleanValue = (value === '<p><br></p>' || value === '<p></p>') ? '' : value;
     setFormData(prev => ({
       ...prev,
-      responsibilities: cleanValue.replace(/<[^>]*>/g, ''), // Strip HTML tags for plain text
-      responsibilitiesHtml: cleanValue
+      responsibilitiesHtml: cleanValue,
+      responsibilities: cleanValue.replace(/<[^>]*>/g, '') // Strip HTML tags for plain text
     }));
   };
 
   const handleBenefitsChange = (value: string) => {
-    // ReactQuill passes HTML value directly
+    // ReactQuill passes the HTML value directly
     const cleanValue = (value === '<p><br></p>' || value === '<p></p>') ? '' : value;
     setFormData(prev => ({
       ...prev,
-      benefits: cleanValue.replace(/<[^>]*>/g, ''), // Strip HTML tags for plain text
-      benefitsHtml: cleanValue
+      benefitsHtml: cleanValue,
+      benefits: cleanValue.replace(/<[^>]*>/g, '') // Strip HTML tags for plain text
     }));
   };
 
@@ -210,17 +189,8 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
     if (!formData.title.trim()) {
       errors.title = 'Job title is required';
     }
-    if (!formData.companyId) {
-      errors.companyId = 'Please select a company';
-    }
     if (!formData.location.city || !formData.location.state) {
       errors.location = 'Please provide a complete location (city, state)';
-    }
-    if (!formData.location.city.trim()) {
-      errors.location = 'City is required';
-    }
-    if (!formData.location.state.trim()) {
-      errors.location = 'State is required';
     }
     if (!formData.deadline) {
       errors.deadline = 'Application deadline is required';
@@ -247,13 +217,10 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
     if (!formData.descriptionHtml.trim()) {
       errors.description = 'Job description is required';
     }
-    if (!formData.description.trim()) {
-      errors.description = 'Job description is required';
+    if (!formData.responsibilitiesHtml.trim()) {
+      errors.responsibilities = 'Responsibilities are required';
     }
     if (!formData.requirementsHtml.trim()) {
-      errors.requirements = 'Requirements are required';
-    }
-    if (!formData.requirements.trim()) {
       errors.requirements = 'Requirements are required';
     }
 
@@ -280,21 +247,19 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
     
     // If not on the final step, just move to the next step
     if (currentStep < 3) {
-      console.log(`[DEBUG] Moving from step ${currentStep} to step ${currentStep + 1}`);
       nextStep();
       return;
     }
 
     // On final step, validate and submit the form
-    console.log('[DEBUG] Submitting job form with data:', formData);
+    console.log('Submitting job form with data:', formData);
     
+    // Validate form before submission
     if (!validateForm()) {
-      console.log('[DEBUG] Form validation failed');
       setError('Please fix the errors below before submitting.');
       return;
     }
 
-    console.log('[DEBUG] Form validation passed');
     setIsSubmitting(true);
     setError('');
     setFormErrors({});
@@ -303,7 +268,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
       // Transform form data to match API request format
       const jobData: JobApiRequest = {
         title: formData.title,
-        description: formData.descriptionHtml || formData.description || '',
+        description: formData.descriptionHtml || formData.description,
         status: formData.status,
         type: formData.type,
         workplaceType: formData.workplaceType,
@@ -332,47 +297,32 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
         isActive: formData.isActive
       };
 
-      console.log('[DEBUG] Sending job data to API:', jobData);
-      console.log('[DEBUG] API_BASE_URL:', import('../config/api').then(config => console.log('API config:', config)));
+      console.log('Sending job data to API:', jobData);
 
-      setApiCallMade(true);
       let savedJob: Job;
-      
-      try {
-        if (initialJob) {
-          console.log(`[DEBUG] Updating job with ID: ${initialJob.id}`);
-          console.log('[DEBUG] About to call jobService.updateJob');
-          // Convert JobApiRequest to Partial<Job> for the update method
-          const updateData = {
-            ...formData,
-            company: formData.company,
-            postedDate: new Date().toISOString(),
-          };
-          savedJob = await jobService.updateJob(initialJob.id, updateData);
-          console.log('[DEBUG] jobService.updateJob completed');
-        } else {
-          console.log('[DEBUG] Creating new job');
-          console.log('[DEBUG] About to call jobService.createJob');
-          // Convert JobApiRequest to Omit<Job, 'id'> for the create method
-          const createData = {
-            ...formData,
-            company: formData.company,
-            postedDate: new Date().toISOString(),
-          };
-          savedJob = await jobService.createJob(createData);
-          console.log('[DEBUG] jobService.createJob completed');
-        }
-
-        console.log('[DEBUG] Job saved successfully:', savedJob);
-      } catch (apiError) {
-        console.log('[DEBUG] API call error:', apiError);
-        throw apiError;
+      if (initialJob) {
+        // Convert JobApiRequest to Partial<Job> for the update method
+        const updateData = {
+          ...formData,
+          company: formData.company,
+          postedDate: new Date().toISOString(),
+        };
+        savedJob = await companyJobService.updateCompanyJob(initialJob.id, updateData);
+      } else {
+        // Convert JobApiRequest to Omit<Job, 'id'> for the create method
+        const createData = {
+          ...formData,
+          company: formData.company,
+          postedDate: new Date().toISOString(),
+        };
+        savedJob = await companyJobService.createCompanyJob(createData);
       }
+
+      console.log('Job saved successfully:', savedJob);
       onJobPosted?.(savedJob);
       
       // Reset form if it's a new job
       if (!initialJob) {
-        console.log('[DEBUG] Resetting form for new job');
         setFormData({
           title: '',
           companyId: 0,
@@ -400,13 +350,9 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
         setCurrentStep(1);
       }
     } catch (err) {
-      console.error('[DEBUG] Error saving job:', err);
-      console.log('[DEBUG] Error type:', typeof err);
-      console.log('[DEBUG] Error message:', err instanceof Error ? err.message : 'Unknown error');
-      console.log('[DEBUG] API call was made:', apiCallMade);
+      console.error('Error saving job:', err);
       setError('Failed to save job. Please try again.');
     } finally {
-      console.log('[DEBUG] Setting isSubmitting to false');
       setIsSubmitting(false);
     }
   };
@@ -462,44 +408,17 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
         </div>
 
         <div>
-          <label htmlFor="companyId" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-1">
             Company *
           </label>
-          {isLoadingCompanies ? (
-            <div className="flex items-center justify-center py-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
-              <span className="ml-2 text-sm text-gray-500">Loading companies...</span>
-            </div>
-          ) : companyError ? (
-            <div className="text-red-600 text-sm p-2 bg-red-50 border border-red-200 rounded">
-              {companyError}
-            </div>
-          ) : companies.length === 0 ? (
-            <div className="text-yellow-600 text-sm p-2 bg-yellow-50 border border-yellow-200 rounded">
-              No verified companies found. Please create and verify a company first.
-            </div>
-          ) : (
-            <select
-              id="companyId"
-              name="companyId"
-              value={formData.companyId}
-              onChange={handleCompanyChange}
-              required
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                formErrors.companyId ? 'border-red-500' : 'border-gray-300'
-              }`}
-            >
-              <option value="">Select a company</option>
-              {companies.map((company) => (
-                <option key={company.id} value={company.id}>
-                  {company.name}
-                </option>
-              ))}
-            </select>
-          )}
-          {formErrors.companyId && (
-            <p className="mt-1 text-sm text-red-600">{formErrors.companyId}</p>
-          )}
+          <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700">
+            {company?.name || 'Your Company'}
+          </div>
+          <input
+            type="hidden"
+            name="companyId"
+            value={formData.companyId}
+          />
         </div>
 
         <div>
@@ -572,29 +491,29 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
           {formErrors.location && (
             <p className="mt-1 text-sm text-red-600">{formErrors.location}</p>
           )}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div>
-            <label htmlFor="zipCode" className="block text-xs font-medium text-gray-600 mb-1">
-              Zip Code
-            </label>
-            <input
-              type="text"
-              id="zipCode"
-              name="zipCode"
-              value={formData.location.zipCode || ''}
-              onChange={handleLocationFieldChange}
-              placeholder="e.g., 10001"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <label htmlFor="zipCode" className="block text-xs font-medium text-gray-600 mb-1">
+                Zip Code
+              </label>
+              <input
+                type="text"
+                id="zipCode"
+                name="zipCode"
+                value={formData.location.zipCode || ''}
+                onChange={handleLocationFieldChange}
+                placeholder="e.g., 10001"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
           </div>
-        </div>
 
+        </div>
 
         <div>
-          <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
-            Job Status *
+          <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
+            Job Type *
           </label>
           <select
             id="status"
@@ -662,6 +581,63 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
             <option value="SENIOR">Senior</option>
             <option value="LEAD">Lead</option>
           </select>
+        </div>
+
+        <div>
+          <label htmlFor="deadline" className="block text-sm font-medium text-gray-700 mb-1">
+            Application Deadline
+          </label>
+          <div className="relative">
+            <input
+              type="date"
+              id="deadline"
+              name="deadline"
+              value={formData.deadline}
+              onChange={handleChange}
+              min={new Date().toISOString().split('T')[0]} // Set minimum date to today
+              className={`w-full px-3 py-2 pr-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer ${
+                formErrors.deadline ? 'border-red-500' : 'border-gray-300'
+              }`}
+              onClick={(e) => e.currentTarget.showPicker?.()}
+              style={{
+                WebkitAppearance: 'none',
+                appearance: 'none',
+                colorScheme: 'light',
+                background: 'transparent'
+              }}
+            />
+            <style>{`
+              input[type="date"]::-webkit-calendar-picker-indicator {
+                display: none;
+              }
+              input[type="date"]::-webkit-inner-spin-button,
+              input[type="date"]::-webkit-outer-spin-button {
+                -webkit-appearance: none;
+                margin: 0;
+              }
+              input[type="date"]::-ms-clear {
+                display: none;
+              }
+              input[type="date"]::-ms-reveal {
+                display: none;
+              }
+            `}</style>
+            <div
+              className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer pointer-events-auto"
+              onClick={(e) => {
+                e.preventDefault();
+                const input = document.getElementById('deadline') as HTMLInputElement;
+                input?.showPicker?.();
+              }}
+            >
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+          </div>
+          {formErrors.deadline && (
+            <p className="mt-1 text-sm text-red-600">{formErrors.deadline}</p>
+          )}
         </div>
 
         <div>
@@ -765,70 +741,6 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
             <p className="mt-1 text-sm text-red-600">{formErrors.salary}</p>
           )}
         </div>
-
-        <div>
-          <label htmlFor="deadline" className="block text-sm font-medium text-gray-700 mb-1">
-            Application Deadline
-          </label>
-          <input
-            type="date"
-            id="deadline"
-            name="deadline"
-            value={formData.deadline}
-            onChange={handleChange}
-            min={new Date().toISOString().split('T')[0]} // Set minimum date to today
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-              formErrors.deadline ? 'border-red-500' : 'border-gray-300'
-            }`}
-          />
-          {formErrors.deadline && (
-            <p className="mt-1 text-sm text-red-600">{formErrors.deadline}</p>
-          )}
-        </div>
-      </div>
-
-      <div>
-        <label htmlFor="responsibilities" className="block text-sm font-medium text-gray-700 mb-1">
-          Responsibilities
-        </label>
-        <div className="editor-wrapper">
-          <ReactQuill
-            theme="snow"
-            value={formData.responsibilitiesHtml}
-            onChange={handleResponsibilitiesChange}
-            placeholder="List the day-to-day responsibilities and key duties..."
-            modules={{
-              toolbar: [
-                [{ 'header': [2, false] }],
-                ['bold', 'italic'],
-                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                ['clean']
-              ],
-            }}
-          />
-        </div>
-      </div>
-
-      <div>
-        <label htmlFor="benefits" className="block text-sm font-medium text-gray-700 mb-1">
-          Benefits
-        </label>
-        <div className="editor-wrapper">
-          <ReactQuill
-            theme="snow"
-            value={formData.benefitsHtml}
-            onChange={handleBenefitsChange}
-            placeholder="Describe the benefits, perks, and compensation package..."
-            modules={{
-              toolbar: [
-                [{ 'header': [2, false] }],
-                ['bold', 'italic'],
-                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                ['clean']
-              ],
-            }}
-          />
-        </div>
       </div>
     </div>
   );
@@ -841,12 +753,12 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
         <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
           Job Description *
         </label>
-        <div className={`editor-wrapper ${formErrors.description ? 'border border-red-500 rounded-md' : ''}`}>
+        <div className="editor-wrapper">
           <ReactQuill
             theme="snow"
             value={formData.descriptionHtml}
             onChange={handleDescriptionChange}
-            placeholder="Describe the role, responsibilities, and what you're looking for..."
+            placeholder="Describe the role, company culture, and what makes this position exciting..."
             modules={{
               toolbar: [
                 [{ 'header': [1, 2, false] }],
@@ -857,8 +769,49 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
             }}
           />
         </div>
-        {formErrors.description && (
-          <p className="mt-1 text-sm text-red-600">{formErrors.description}</p>
+      </div>
+
+      <div>
+        <label htmlFor="responsibilities" className="block text-sm font-medium text-gray-700 mb-1">
+          Responsibilities *
+        </label>
+        <div className={`editor-wrapper ${formErrors.responsibilities ? 'border border-red-500 rounded-md' : ''}`}>
+          {(() => {
+            try {
+              return (
+                <ReactQuill
+                  theme="snow"
+                  value={formData.responsibilitiesHtml}
+                  onChange={handleResponsibilitiesChange}
+                  placeholder="List the day-to-day responsibilities and key duties..."
+                  modules={{
+                    toolbar: [
+                      [{ 'header': [2, false] }],
+                      ['bold', 'italic'],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      ['clean']
+                    ],
+                  }}
+                />
+              );
+            } catch (error) {
+              console.error('Error rendering ReactQuill for responsibilities:', error);
+              return (
+                <textarea
+                  value={formData.responsibilitiesHtml}
+                  onChange={(e) => handleResponsibilitiesChange(e.target.value)}
+                  placeholder="List the day-to-day responsibilities and key duties..."
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                    formErrors.responsibilities ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  rows={6}
+                />
+              );
+            }
+          })()}
+        </div>
+        {formErrors.responsibilities && (
+          <p className="mt-1 text-sm text-red-600">{formErrors.responsibilities}</p>
         )}
       </div>
 
@@ -867,24 +820,82 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
           Requirements *
         </label>
         <div className={`editor-wrapper ${formErrors.requirements ? 'border border-red-500 rounded-md' : ''}`}>
-          <ReactQuill
-            theme="snow"
-            value={formData.requirementsHtml}
-            onChange={handleRequirementsChange}
-            placeholder="List the skills, experience, and qualifications needed..."
-            modules={{
-              toolbar: [
-                [{ 'header': [2, false] }],
-                ['bold', 'italic'],
-                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                ['clean']
-              ],
-            }}
-          />
+          {(() => {
+            try {
+              return (
+                <ReactQuill
+                  theme="snow"
+                  value={formData.requirementsHtml}
+                  onChange={handleRequirementsChange}
+                  placeholder="List the skills, experience, and qualifications needed..."
+                  modules={{
+                    toolbar: [
+                      [{ 'header': [2, false] }],
+                      ['bold', 'italic'],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      ['clean']
+                    ],
+                  }}
+                />
+              );
+            } catch (error) {
+              console.error('Error rendering ReactQuill for requirements:', error);
+              return (
+                <textarea
+                  value={formData.requirementsHtml}
+                  onChange={(e) => handleRequirementsChange(e.target.value)}
+                  placeholder="List the skills, experience, and qualifications needed..."
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                    formErrors.requirements ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  rows={6}
+                />
+              );
+            }
+          })()}
         </div>
         {formErrors.requirements && (
           <p className="mt-1 text-sm text-red-600">{formErrors.requirements}</p>
         )}
+      </div>
+
+      <div>
+        <label htmlFor="benefits" className="block text-sm font-medium text-gray-700 mb-1">
+          Benefits
+        </label>
+        <div className="editor-wrapper">
+          {(() => {
+            try {
+              return (
+                <ReactQuill
+                  theme="snow"
+                  value={formData.benefitsHtml}
+                  onChange={handleBenefitsChange}
+                  placeholder="Describe the benefits, perks, and compensation package..."
+                  modules={{
+                    toolbar: [
+                      [{ 'header': [2, false] }],
+                      ['bold', 'italic'],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      ['clean']
+                    ],
+                  }}
+                />
+              );
+            } catch (error) {
+              console.error('Error rendering ReactQuill for benefits:', error);
+              return (
+                <textarea
+                  value={formData.benefitsHtml}
+                  onChange={(e) => handleBenefitsChange(e.target.value)}
+                  placeholder="Describe the benefits, perks, and compensation package..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  rows={6}
+                />
+              );
+            }
+          })()}
+        </div>
       </div>
     </div>
   );
@@ -895,12 +906,12 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
       
       <div>
         <label htmlFor="skills" className="block text-sm font-medium text-gray-700 mb-1">
-          Required Skills
+          Required Skills *
         </label>
         <div className="flex flex-wrap gap-2 mb-3">
           {formData.skills.map((skill) => (
-            <span 
-              key={skill} 
+            <span
+              key={skill}
               className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800"
             >
               {skill}
@@ -965,12 +976,6 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
           {error}
-        </div>
-      )}
-
-      {apiCallMade && (
-        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded mb-4">
-          <strong>Debug:</strong> API call is being made...
         </div>
       )}
 
@@ -1057,4 +1062,4 @@ const JobPostingForm: React.FC<JobPostingFormProps> = ({
   );
 };
 
-export default JobPostingForm;
+export default CompanyDashboardJobForm;

@@ -1,5 +1,84 @@
-export type JobType = 'Full-Time' | 'Part-Time' | 'Remote' | 'Internship'
+export type JobType = 'FULL_TIME' | 'PART_TIME' | 'REMOTE' | 'INTERNSHIP'
+export type JobStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
+export type WorkplaceType = 'ONSITE' | 'REMOTE' | 'HYBRID'
+export type ExperienceLevel = 'JUNIOR' | 'MID' | 'SENIOR' | 'LEAD'
+export type SalaryPeriod = 'HOURLY' | 'MONTHLY' | 'YEARLY'
 export type ApplicationStatus = 'Pending' | 'Under Review' | 'Shortlisted' | 'Rejected' | 'Accepted'
+
+// Legacy types for backward compatibility
+export type JobTypeLegacy = 'Full-Time' | 'Part-Time' | 'Remote' | 'Internship'
+export type JobTypeApi = JobType
+
+// Interface for API requests that matches backend expectations
+export interface JobApiRequest {
+  title: string;
+  description: string;
+  status: JobStatus;
+  type: JobType;
+  workplaceType: WorkplaceType;
+  experienceLevel?: ExperienceLevel;
+  companyId?: number;
+  companyName?: string;
+  companyWebsite?: string;
+  companyLogoUrl?: string;
+  companyDescription?: string;
+  companyIndustry?: string;
+  companySize?: string;
+  salary?: SalaryRequest;
+  location?: LocationRequest;
+  skills?: string[];
+  applyUrl?: string;
+  responsibilities?: string;
+  requirements?: string;
+  benefits?: string;
+  deadline?: string;
+  isActive?: boolean;
+}
+
+export interface SalaryRequest {
+  min: number;
+  max: number;
+  currency: string;
+  period: SalaryPeriod;
+  isNegotiable: boolean;
+}
+
+export interface LocationRequest {
+  city: string;
+  state: string;
+  country: string;
+  zipCode?: string;
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
+}
+
+// Legacy interface for backward compatibility
+export interface JobApiRequestLegacy {
+  title: string;
+  companyId?: number;
+  company?: Company;
+  location?: Location;
+  type: JobTypeApi;
+  typeDisplayName?: string;
+  workplaceType?: string;
+  experienceLevel?: string;
+  salary?: Salary | string;
+  description: string;
+  descriptionHtml?: string;
+  responsibilities?: string;
+  responsibilitiesHtml?: string;
+  requirements?: string;
+  requirementsHtml?: string;
+  benefits?: string;
+  benefitsHtml?: string;
+  skills?: string[];
+  applyUrl?: string;
+  deadline?: string;
+  isActive?: boolean;
+  postedDate?: string;
+}
 
 export interface Job {
   id: string
@@ -8,16 +87,19 @@ export interface Job {
   company: Company
   location: Location
   type: JobType
+  status?: JobStatus
   typeDisplayName?: string
-  workplaceType?: string
-  experienceLevel?: string
+  workplaceType?: WorkplaceType
+  experienceLevel?: ExperienceLevel
   salary: Salary | string;
   description: string
   descriptionHtml?: string
   responsibilities?: string
+  responsibilitiesHtml?: string
   requirements?: string
   requirementsHtml?: string
   benefits?: string
+  benefitsHtml?: string
   skills?: string[]
   applyUrl?: string
   postedDate?: string

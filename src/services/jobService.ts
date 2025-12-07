@@ -1,5 +1,5 @@
 import { API_BASE_URL } from '../config/api';
-import type { Job, Application } from '../types/job.types';
+import type { Job, Application, JobType, JobTypeApi } from '../types/job.types';
 
 // Helper function to get auth headers
 const getAuthHeaders = () => {
@@ -45,10 +45,32 @@ export const jobService = {
   },
 
   async createJob(job: Omit<Job, 'id'>): Promise<Job> {
+    // Transform job type to match backend enum format
+    const transformJobType = (type: JobType): JobTypeApi => {
+      switch (type) {
+        case 'Full-Time':
+          return 'FULL_TIME';
+        case 'Part-Time':
+          return 'PART_TIME';
+        case 'Internship':
+          return 'INTERNSHIP';
+        case 'Remote':
+          return 'REMOTE';
+        default:
+          return 'FULL_TIME';
+      }
+    };
+
+    // Create a copy with transformed type for the API
+    const jobForApi = {
+      ...job,
+      type: transformJobType(job.type)
+    };
+
     const response = await fetch(`${API_BASE_URL}/jobs`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify(job),
+      body: JSON.stringify(jobForApi),
     });
     if (!response.ok) {
       throw new Error('Failed to create job');
@@ -57,10 +79,32 @@ export const jobService = {
   },
 
   async updateJob(id: string, job: Partial<Job>): Promise<Job> {
+    // Transform job type to match backend enum format if present
+    const transformJobType = (type: JobType): JobTypeApi => {
+      switch (type) {
+        case 'Full-Time':
+          return 'FULL_TIME';
+        case 'Part-Time':
+          return 'PART_TIME';
+        case 'Internship':
+          return 'INTERNSHIP';
+        case 'Remote':
+          return 'REMOTE';
+        default:
+          return 'FULL_TIME';
+      }
+    };
+
+    // Create a copy with transformed type for the API if type is present
+    const jobForApi = job.type ? {
+      ...job,
+      type: transformJobType(job.type)
+    } : job;
+
     const response = await fetch(`${API_BASE_URL}/jobs/${id}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
-      body: JSON.stringify(job),
+      body: JSON.stringify(jobForApi),
     });
     if (!response.ok) {
       throw new Error('Failed to update job');

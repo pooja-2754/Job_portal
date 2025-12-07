@@ -1,23 +1,20 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Outlet } from 'react-router-dom';
 import { useCompanyAuth } from '../hooks/useCompanyAuth';
 import { Navbar } from '../components/Navbar';
 import { CompanySidebar } from '../components/CompanySidebar';
-import { Outlet } from 'react-router-dom';
 
 const CompanyDashboardPage: React.FC = () => {
   const { isAuthenticated, isLoading } = useCompanyAuth();
   const navigate = useNavigate();
 
   React.useEffect(() => {
-    // Only redirect if authentication check is complete and user is not authenticated
     if (!isLoading && !isAuthenticated) {
       navigate('/company-login');
       return;
     }
   }, [isAuthenticated, isLoading, navigate]);
 
-  // Show loading spinner while checking authentication status
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -26,17 +23,24 @@ const CompanyDashboardPage: React.FC = () => {
     );
   }
 
-  // Don't render the dashboard if not authenticated
   if (!isAuthenticated) {
     return null;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row relative">
+      {/* Sidebar - Sticky on Desktop, Fixed Bottom on Mobile */}
       <CompanySidebar />
-      <div className="flex-1">
+      
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0">
         <Navbar />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* 
+          pb-20 on mobile prevents content from being hidden behind the bottom nav.
+          md:pb-8 resets it for desktop.
+        */}
+        <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20 md:pb-8">
           <Outlet />
         </div>
       </div>

@@ -13,8 +13,6 @@ import CompanySignupPage from './pages/CompanySignupPage';
 import DashboardPage from './pages/DashboardPage';
 import CompanyDashboardPage from './pages/CompanyDashboardPage';
 import JobsPage from './pages/JobsPage';
-import CompanyJobsPage from './pages/CompanyJobsPage';
-import CompanyApplicationsPage from './pages/CompanyApplicationsPage';
 import { JobDetailsPage } from './pages/JobDetailsPage';
 import RecruiterDashboard from './pages/RecruiterDashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
@@ -24,6 +22,8 @@ import NotFoundPage from './pages/NotFoundPage';
 // Dashboard Components
 import CompanyDashboardOverview from './components/dashboard/CompanyDashboardOverview';
 import CompanyDashboardJobs from './components/dashboard/CompanyDashboardJobs';
+import CompanyDashboardCreateJob from './components/dashboard/CompanyDashboardCreateJob';
+import CompanyDashboardJobDetails from './components/dashboard/CompanyDashboardJobDetails';
 import CompanyDashboardApplications from './components/dashboard/CompanyDashboardApplications';
 import CompanyDashboardAnalytics from './components/dashboard/CompanyDashboardAnalytics';
 import CompanyDashboardProfile from './components/dashboard/CompanyDashboardProfile';
@@ -66,6 +66,9 @@ const App: React.FC = () => {
               >
                 <Route index element={<CompanyDashboardOverview />} />
                 <Route path="jobs" element={<CompanyDashboardJobs />} />
+                <Route path="jobs/new" element={<CompanyDashboardCreateJob />} />
+                <Route path="jobs/:id" element={<CompanyDashboardJobDetails />} />
+                <Route path="jobs/:id/edit" element={<CompanyDashboardJobDetails />} />
                 <Route path="applications" element={<CompanyDashboardApplications />} />
                 <Route path="analytics" element={<CompanyDashboardAnalytics />} />
                 <Route path="profile" element={<CompanyDashboardProfile />} />
@@ -74,22 +77,6 @@ const App: React.FC = () => {
               </Route>
               
               {/* Legacy Company Routes (for backward compatibility) */}
-              <Route
-                path="/company-jobs"
-                element={
-                  <ProtectedRoute authType="company">
-                    <CompanyJobsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/company-applications"
-                element={
-                  <ProtectedRoute authType="company">
-                    <CompanyApplicationsPage />
-                  </ProtectedRoute>
-                }
-              />
               
               {/* Public Routes */}
               <Route

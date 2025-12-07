@@ -43,7 +43,7 @@ export const CompanySidebar: React.FC = () => {
     },
     {
       icon: <Calendar className="w-5 h-5" />,
-      label: 'Interview Schedule',
+      label: 'Interviews',
       path: '/company-dashboard/interviews',
     },
     {
@@ -61,49 +61,62 @@ export const CompanySidebar: React.FC = () => {
   };
 
   return (
-    <div
-      className={`bg-white border-r border-gray-200 transition-all duration-300 ${
-        isExpanded ? 'w-64' : 'w-20'
-      }`}
-      onMouseEnter={() => setIsExpanded(true)}
-      onMouseLeave={() => setIsExpanded(false)}
-    >
-      <div className="flex flex-col h-full">
-        {/* Logo/Brand */}
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center">
-            <div className="bg-indigo-600 p-2 rounded-lg">
-              <Building className="w-6 h-6 text-white" />
-            </div>
-            {isExpanded && (
-              <span className="ml-3 text-xl font-bold text-gray-900">
-                Job<span className="text-indigo-600">Portal</span>
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Navigation Menu */}
-        <nav className="flex-1 p-4 space-y-2">
-          {menuItems.map((item) => (
-            <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-colors ${
-                isActive(item.path)
-                  ? 'bg-indigo-50 text-indigo-600'
-                  : 'text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              <div className="shrink-0">{item.icon}</div>
-              {isExpanded && (
-                <span className="ml-3 text-sm font-medium">{item.label}</span>
-              )}
-            </button>
-          ))}
-        </nav>
+    <>
+      {/* Mobile Bottom Navigation (Visible < md) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-200 z-50 flex justify-around items-center px-2 shadow-[0_-1px_3px_rgba(0,0,0,0.1)]">
+        {menuItems.slice(0, 5).map((item) => ( // Show top 5 items on mobile to fit
+          <button
+            key={item.path}
+            onClick={() => navigate(item.path)}
+            className={`flex flex-col items-center justify-center p-2 rounded-lg ${
+              isActive(item.path) ? 'text-indigo-600' : 'text-gray-500'
+            }`}
+          >
+            {item.icon}
+          </button>
+        ))}
+        {/* Mobile "More" button for remaining items could go here if needed */}
       </div>
-    </div>
+
+      {/* Desktop Sidebar (Visible >= md) */}
+      <div
+        className={`hidden md:flex flex-col bg-white border-r border-gray-200 transition-all duration-300 h-screen sticky top-0 z-40 ${
+          isExpanded ? 'w-64' : 'w-20'
+        }`}
+        onMouseEnter={() => setIsExpanded(true)}
+        onMouseLeave={() => setIsExpanded(false)}
+      >
+        <div className="flex flex-col h-full overflow-y-auto no-scrollbar">
+          {/* Logo Area Placeholder (Optional - aligns with Navbar height) */}
+          <div className="h-16 shrink-0" /> 
+
+          {/* Navigation Menu */}
+          <nav className="flex-1 p-4 space-y-2">
+            {menuItems.map((item) => (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap overflow-hidden ${
+                  isActive(item.path)
+                    ? 'bg-indigo-50 text-indigo-600'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+                title={!isExpanded ? item.label : ''}
+              >
+                <div className="shrink-0">{item.icon}</div>
+                <span
+                  className={`ml-3 text-sm font-medium transition-opacity duration-200 ${
+                    isExpanded ? 'opacity-100' : 'opacity-0 w-0'
+                  }`}
+                >
+                  {item.label}
+                </span>
+              </button>
+            ))}
+          </nav>
+        </div>
+      </div>
+    </>
   );
 };
 

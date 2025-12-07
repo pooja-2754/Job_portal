@@ -1,12 +1,13 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { Navbar } from '../components/Navbar'
-import { 
-  User, 
-  Briefcase, 
-  Bookmark, 
-  Calendar, 
-  TrendingUp, 
+import ResumeManagement from '../components/ResumeManagement'
+import {
+  User,
+  Briefcase,
+  Bookmark,
+  Calendar,
+  TrendingUp,
   Clock,
   CheckCircle2,
   Settings,
@@ -23,13 +24,14 @@ const SIDEBAR_ITEMS = [
   { icon: Briefcase, label: 'Applications', active: false },
   { icon: Bookmark, label: 'Saved Jobs', active: false },
   { icon: MessageSquare, label: 'Messages', active: false },
-  { icon: FileText, label: 'Documents', active: false },
+  { icon: FileText, label: 'Resumes', active: false },
   { icon: Calendar, label: 'Schedule', active: false },
   { icon: Settings, label: 'Settings', active: false },
 ]
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth()
+  const [activeTab, setActiveTab] = useState('Overview')
 
   // Mock data
   const stats = [
@@ -63,9 +65,10 @@ const DashboardPage: React.FC = () => {
             {SIDEBAR_ITEMS.map((item) => (
               <button
                 key={item.label}
+                onClick={() => setActiveTab(item.label)}
                 className={`relative flex items-center h-12 px-6 transition-colors duration-200
-                  ${item.active 
-                    ? 'text-blue-600 bg-blue-50 border-r-4 border-blue-600' 
+                  ${activeTab === item.label
+                    ? 'text-blue-600 bg-blue-50 border-r-4 border-blue-600'
                     : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                   }`}
               >
@@ -80,7 +83,7 @@ const DashboardPage: React.FC = () => {
                 </span>
                 
                 {/* Active Indicator Dot (optional, for collapsed state) */}
-                {item.active && (
+                {activeTab === item.label && (
                   <div className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-md bg-blue-600 md:hidden" />
                 )}
               </button>
@@ -108,7 +111,7 @@ const DashboardPage: React.FC = () => {
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-gray-200/60">
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                  Dashboard
+                  {activeTab === 'Resumes' ? 'Resume Management' : 'Dashboard'}
                 </h1>
                 <p className="text-gray-500 mt-1">
                   Welcome back, {user?.name || 'User'}.
@@ -122,121 +125,128 @@ const DashboardPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {stats.map((stat) => (
-                <div key={stat.label} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center hover:shadow-md transition-shadow">
-                  <div className={`p-3 rounded-lg ${stat.bg} mr-4`}>
-                    <stat.icon className={`w-6 h-6 ${stat.color}`} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">{stat.label}</p>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                  </div>
+            {/* Content based on active tab */}
+            {activeTab === 'Resumes' ? (
+              <ResumeManagement />
+            ) : (
+              <>
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {stats.map((stat) => (
+                    <div key={stat.label} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center hover:shadow-md transition-shadow">
+                      <div className={`p-3 rounded-lg ${stat.bg} mr-4`}>
+                        <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">{stat.label}</p>
+                        <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
 
-            {/* Content Grid: Activity & Profile */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              
-              {/* Activity Feed */}
-              <div className="lg:col-span-2">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-full">
-                  <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                      Recent Activity
-                    </h3>
-                  </div>
-                  <div className="divide-y divide-gray-50">
-                    {recentActivity.map((activity) => (
-                      <div key={activity.id} className="p-6 hover:bg-gray-50/80 transition-colors group cursor-pointer">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-4">
-                            <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 font-bold border border-gray-200">
-                              {activity.company.charAt(0)}
-                            </div>
-                            <div>
-                              <p className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{activity.role}</p>
-                              <p className="text-sm text-gray-500">{activity.company}</p>
+                {/* Content Grid: Activity & Profile */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  
+                  {/* Activity Feed */}
+                  <div className="lg:col-span-2">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-full">
+                      <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center">
+                        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                          Recent Activity
+                        </h3>
+                      </div>
+                      <div className="divide-y divide-gray-50">
+                        {recentActivity.map((activity) => (
+                          <div key={activity.id} className="p-6 hover:bg-gray-50/80 transition-colors group cursor-pointer">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-4">
+                                <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 font-bold border border-gray-200">
+                                  {activity.company.charAt(0)}
+                                </div>
+                                <div>
+                                  <p className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{activity.role}</p>
+                                  <p className="text-sm text-gray-500">{activity.company}</p>
+                                </div>
+                              </div>
+                              <div className="flex flex-col items-end">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                                  activity.status === 'Interview' ? 'bg-green-50 text-green-700 border-green-100' :
+                                  activity.status === 'In Review' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                                  'bg-blue-50 text-blue-700 border-blue-100'
+                                }`}>
+                                  {activity.status}
+                                </span>
+                                <span className="text-xs text-gray-400 mt-2 flex items-center">
+                                  <Clock className="w-3 h-3 mr-1" />
+                                  {activity.date}
+                                </span>
+                              </div>
                             </div>
                           </div>
-                          <div className="flex flex-col items-end">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                              activity.status === 'Interview' ? 'bg-green-50 text-green-700 border-green-100' :
-                              activity.status === 'In Review' ? 'bg-amber-50 text-amber-700 border-amber-100' :
-                              'bg-blue-50 text-blue-700 border-blue-100'
-                            }`}>
-                              {activity.status}
+                        ))}
+                      </div>
+                      <div className="p-4 border-t border-gray-100 bg-gray-50/30">
+                        <button className="w-full text-center text-sm text-gray-500 hover:text-blue-600 font-medium py-2">
+                          View all applications
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Profile / Status Card */}
+                  <div className="lg:col-span-1">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-6">
+                      <div className="flex items-start justify-between mb-6">
+                        <div className="h-16 w-16 bg-linear-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-blue-500/30">
+                          {user?.name ? user.name.charAt(0).toUpperCase() : <User />}
+                        </div>
+                        <button className="text-gray-400 hover:text-gray-600 p-1">
+                          <Settings className="w-5 h-5" />
+                        </button>
+                      </div>
+                      
+                      <div className="mb-6">
+                        <h2 className="text-xl font-bold text-gray-900">{user?.name || 'Guest User'}</h2>
+                        <p className="text-sm text-gray-500">{user?.email}</p>
+                        <div className="mt-3 inline-flex items-center px-2 py-1 bg-green-50 border border-green-200 rounded text-xs text-green-700 font-medium">
+                          <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5 animate-pulse"></span>
+                          Open to work
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 pt-6 border-t border-gray-100">
+                        <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Completion</h4>
+                        
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between text-sm group cursor-pointer">
+                            <span className="text-gray-600 flex items-center group-hover:text-gray-900">
+                              <CheckCircle2 className="w-4 h-4 mr-2 text-green-500" />
+                              Email Verified
                             </span>
-                            <span className="text-xs text-gray-400 mt-2 flex items-center">
-                              <Clock className="w-3 h-3 mr-1" />
-                              {activity.date}
+                          </div>
+                          <div className="flex items-center justify-between text-sm group cursor-pointer">
+                            <span className="text-gray-600 flex items-center group-hover:text-gray-900">
+                              <CheckCircle2 className="w-4 h-4 mr-2 text-green-500" />
+                              Resume Added
                             </span>
+                            <ChevronRight className="w-4 h-4 text-gray-300" />
+                          </div>
+                          <div className="flex items-center justify-between text-sm group cursor-pointer">
+                            <span className="text-gray-600 flex items-center group-hover:text-gray-900">
+                              <div className="w-4 h-4 mr-2 border-2 border-gray-300 rounded-full"></div>
+                              LinkedIn Profile
+                            </span>
+                            <span className="text-blue-600 text-xs font-medium hover:underline">Link</span>
                           </div>
                         </div>
                       </div>
-                    ))}
+                    </div>
                   </div>
-                  <div className="p-4 border-t border-gray-100 bg-gray-50/30">
-                    <button className="w-full text-center text-sm text-gray-500 hover:text-blue-600 font-medium py-2">
-                      View all applications
-                    </button>
-                  </div>
+
                 </div>
-              </div>
-
-              {/* Profile / Status Card */}
-              <div className="lg:col-span-1">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-6">
-                  <div className="flex items-start justify-between mb-6">
-                    <div className="h-16 w-16 bg-linear-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-blue-500/30">
-                      {user?.name ? user.name.charAt(0).toUpperCase() : <User />}
-                    </div>
-                    <button className="text-gray-400 hover:text-gray-600 p-1">
-                      <Settings className="w-5 h-5" />
-                    </button>
-                  </div>
-                  
-                  <div className="mb-6">
-                    <h2 className="text-xl font-bold text-gray-900">{user?.name || 'Guest User'}</h2>
-                    <p className="text-sm text-gray-500">{user?.email}</p>
-                    <div className="mt-3 inline-flex items-center px-2 py-1 bg-green-50 border border-green-200 rounded text-xs text-green-700 font-medium">
-                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5 animate-pulse"></span>
-                      Open to work
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 pt-6 border-t border-gray-100">
-                    <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Completion</h4>
-                    
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between text-sm group cursor-pointer">
-                        <span className="text-gray-600 flex items-center group-hover:text-gray-900">
-                          <CheckCircle2 className="w-4 h-4 mr-2 text-green-500" />
-                          Email Verified
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm group cursor-pointer">
-                        <span className="text-gray-600 flex items-center group-hover:text-gray-900">
-                          <CheckCircle2 className="w-4 h-4 mr-2 text-green-500" />
-                          Resume Added
-                        </span>
-                        <ChevronRight className="w-4 h-4 text-gray-300" />
-                      </div>
-                      <div className="flex items-center justify-between text-sm group cursor-pointer">
-                        <span className="text-gray-600 flex items-center group-hover:text-gray-900">
-                          <div className="w-4 h-4 mr-2 border-2 border-gray-300 rounded-full"></div>
-                          LinkedIn Profile
-                        </span>
-                        <span className="text-blue-600 text-xs font-medium hover:underline">Link</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-            </div>
+              </>
+            )}
           </div>
         </main>
       </div>
