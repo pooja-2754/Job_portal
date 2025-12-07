@@ -1,5 +1,5 @@
 import { API_BASE_URL } from '../config/api';
-import type { Job, Application, JobType, JobTypeApi } from '../types/job.types';
+import type { Job, Application, JobTypeApi, JobTypeLegacy } from '../types/job.types';
 
 // Helper function to get auth headers
 const getAuthHeaders = () => {
@@ -46,14 +46,18 @@ export const jobService = {
 
   async createJob(job: Omit<Job, 'id'>): Promise<Job> {
     // Transform job type to match backend enum format
-    const transformJobType = (type: JobType): JobTypeApi => {
+    const transformJobType = (type: JobTypeApi | JobTypeLegacy): JobTypeApi => {
       switch (type) {
+        case 'FULL_TIME':
         case 'Full-Time':
           return 'FULL_TIME';
+        case 'PART_TIME':
         case 'Part-Time':
           return 'PART_TIME';
+        case 'INTERNSHIP':
         case 'Internship':
           return 'INTERNSHIP';
+        case 'REMOTE':
         case 'Remote':
           return 'REMOTE';
         default:
@@ -80,14 +84,18 @@ export const jobService = {
 
   async updateJob(id: string, job: Partial<Job>): Promise<Job> {
     // Transform job type to match backend enum format if present
-    const transformJobType = (type: JobType): JobTypeApi => {
+    const transformJobType = (type: JobTypeApi | JobTypeLegacy): JobTypeApi => {
       switch (type) {
+        case 'FULL_TIME':
         case 'Full-Time':
           return 'FULL_TIME';
+        case 'PART_TIME':
         case 'Part-Time':
           return 'PART_TIME';
+        case 'INTERNSHIP':
         case 'Internship':
           return 'INTERNSHIP';
+        case 'REMOTE':
         case 'Remote':
           return 'REMOTE';
         default:
@@ -172,12 +180,46 @@ export const jobService = {
 
   // Dashboard statistics
   async getDashboardStats(): Promise<{
-    totalJobs: number;
-    activeJobs: number;
     totalApplications: number;
+    activeJobs: number;
+    totalJobs: number;
     pendingApplications: number;
+    underReviewApplications: number;
+    shortlistedApplications: number;
+    rejectedApplications: number;
+    acceptedApplications: number;
+    applicationStatusDistribution: {
+      Pending: number;
+      'Under Review': number;
+      Shortlisted: number;
+      Rejected: number;
+      Accepted: number;
+    };
+    recentApplications: Array<{
+      id: number;
+      jobId: number;
+      jobTitle: string;
+      jobCompany: string;
+      applicantName: string;
+      applicantEmail: string;
+      applicantPhone: string;
+      resumeUrl: string;
+      resumePreviewUrl: string;
+      coverLetter: string;
+      experience: string;
+      education: string;
+      status: string;
+      statusDisplayName: string;
+      appliedDate: string;
+      updatedAt: string;
+    }>;
+    topJobsByApplications: Array<{
+      job: Job;
+      applicationCount: number;
+    }>;
+    jobsWithApproachingDeadlines: Job[];
   }> {
-    const response = await fetch(`${API_BASE_URL}/dashboard/stats`, {
+    const response = await fetch(`${API_BASE_URL}/dashboard/job-seeker-stats`, {
       headers: getAuthHeaders(),
     });
     if (!response.ok) {

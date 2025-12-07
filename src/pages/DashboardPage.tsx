@@ -1,8 +1,13 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { Navbar } from '../components/Navbar'
 import ResumeManagement from '../components/ResumeManagement'
 import ApplicationsManagement from '../components/ApplicationsManagement'
+import SavedJobs from '../components/SavedJobs'
+import Messages from '../components/Messages'
+import Schedule from '../components/Schedule'
+import SeekerSettings from '../components/SeekerSettings'
+import { jobService } from '../services/jobService'
 import {
   User,
   Briefcase,
@@ -16,7 +21,8 @@ import {
   MessageSquare,
   FileText,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  AlertCircle
 } from 'lucide-react'
 
 // Sidebar Navigation Items
@@ -30,22 +36,112 @@ const SIDEBAR_ITEMS = [
   { icon: Settings, label: 'Settings', active: false },
 ]
 
+// Define interfaces for our data
+interface DashboardStats {
+  label: string
+  value: string
+  icon: React.ElementType
+  color: string
+  bg: string
+}
+
+interface RecentActivity {
+  id: number
+  company: string
+  role: string
+  status: string
+  date: string
+}
+
 const DashboardPage: React.FC = () => {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState('Overview')
+  const [stats, setStats] = useState<DashboardStats[]>([
+    { label: 'Applications', value: '0', icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: 'Saved Jobs', value: '0', icon: Bookmark, color: 'text-purple-600', bg: 'bg-purple-50' },
+    { label: 'Interviews', value: '0', icon: Calendar, color: 'text-green-600', bg: 'bg-green-50' },
+  ])
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  // Mock data
-  const stats = [
-    { label: 'Applications', value: '12', icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: 'Saved Jobs', value: '8', icon: Bookmark, color: 'text-purple-600', bg: 'bg-purple-50' },
-    { label: 'Interviews', value: '3', icon: Calendar, color: 'text-green-600', bg: 'bg-green-50' },
-  ]
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true)
+        const token = localStorage.getItem('token')
+        
+        if (!token) {
+          throw new Error('Authentication token not found')
+        }
 
-  const recentActivity = [
-    { id: 1, company: 'TechCorp Inc.', role: 'Frontend Developer', status: 'In Review', date: '2 days ago' },
-    { id: 2, company: 'StartupFlow', role: 'React Engineer', status: 'Interview', date: '5 days ago' },
-    { id: 3, company: 'Designify', role: 'UI/UX Designer', status: 'Applied', date: '1 week ago' },
-  ]
+        // Fetch dashboard stats
+        const dashboardStats = await jobService.getDashboardStats()
+        
+        // Update stats with actual data
+        setStats([
+          {
+            label: 'Applications',
+            value: dashboardStats.totalApplications?.toString() || '0',
+            icon: Briefcase,
+            color: 'text-blue-600',
+            bg: 'bg-blue-50'
+          },
+          {
+            label: 'Saved Jobs',
+            value: '0', // TODO: Implement saved jobs API
+            icon: Bookmark,
+            color: 'text-purple-600',
+            bg: 'bg-purple-50'
+          },
+          {
+            label: 'Interviews',
+            value: dashboardStats.shortlistedApplications?.toString() || '0', // Using shortlisted as interviews
+            icon: Calendar,
+            color: 'text-green-600',
+            bg: 'bg-green-50'
+          },
+        ])
+
+        // Use recent applications from dashboard stats
+        if (dashboardStats.recentApplications && dashboardStats.recentApplications.length > 0) {
+          const formattedActivity = dashboardStats.recentApplications.map(app => ({
+            id: app.id,
+            company: app.jobCompany || 'Unknown Company',
+            role: app.jobTitle || 'Unknown Position',
+            status: app.statusDisplayName || app.status,
+            date: formatRelativeDate(app.appliedDate)
+          }))
+          setRecentActivity(formattedActivity)
+        }
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load dashboard data')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchDashboardData()
+  }, [])
+
+  // Helper function to format relative date
+  const formatRelativeDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString)
+      const now = new Date()
+      const diffTime = Math.abs(now.getTime() - date.getTime())
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      
+      if (diffDays === 0) return 'Today'
+      if (diffDays === 1) return 'Yesterday'
+      if (diffDays < 7) return `${diffDays} days ago`
+      if (diffDays < 30) return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) > 1 ? 's' : ''} ago`
+      return `${Math.floor(diffDays / 30)} month${Math.floor(diffDays / 30) > 1 ? 's' : ''} ago`
+    } catch {
+      return 'Recently'
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
@@ -131,21 +227,52 @@ const DashboardPage: React.FC = () => {
               <ResumeManagement />
             ) : activeTab === 'Applications' ? (
               <ApplicationsManagement />
+            ) : activeTab === 'Saved Jobs' ? (
+              <SavedJobs />
+            ) : activeTab === 'Messages' ? (
+              <Messages />
+            ) : activeTab === 'Schedule' ? (
+              <Schedule />
+            ) : activeTab === 'Settings' ? (
+              <SeekerSettings />
             ) : (
               <>
+                {/* Error State */}
+                {error && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center text-red-700">
+                    <AlertCircle className="w-5 h-5 mr-2" />
+                    <p>{error}</p>
+                  </div>
+                )}
+
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {stats.map((stat) => (
-                    <div key={stat.label} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center hover:shadow-md transition-shadow">
-                      <div className={`p-3 rounded-lg ${stat.bg} mr-4`}>
-                        <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                  {isLoading ? (
+                    // Loading skeletons for stats
+                    Array.from({ length: 3 }).map((_, index) => (
+                      <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-pulse">
+                        <div className="flex items-center">
+                          <div className="w-12 h-12 bg-gray-200 rounded-lg mr-4"></div>
+                          <div className="flex-1">
+                            <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
+                            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">{stat.label}</p>
-                        <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                    ))
+                  ) : (
+                    stats.map((stat) => (
+                      <div key={stat.label} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center hover:shadow-md transition-shadow">
+                        <div className={`p-3 rounded-lg ${stat.bg} mr-4`}>
+                          <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">{stat.label}</p>
+                          <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
 
                 {/* Content Grid: Activity & Profile */}
@@ -160,37 +287,67 @@ const DashboardPage: React.FC = () => {
                         </h3>
                       </div>
                       <div className="divide-y divide-gray-50">
-                        {recentActivity.map((activity) => (
-                          <div key={activity.id} className="p-6 hover:bg-gray-50/80 transition-colors group cursor-pointer">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-4">
-                                <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 font-bold border border-gray-200">
-                                  {activity.company.charAt(0)}
+                        {isLoading ? (
+                          // Loading skeletons for recent activity
+                          Array.from({ length: 3 }).map((_, index) => (
+                            <div key={index} className="p-6 animate-pulse">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-4">
+                                  <div className="h-12 w-12 bg-gray-200 rounded-lg"></div>
+                                  <div className="flex-1">
+                                    <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
+                                    <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                                  </div>
                                 </div>
-                                <div>
-                                  <p className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{activity.role}</p>
-                                  <p className="text-sm text-gray-500">{activity.company}</p>
+                                <div className="flex flex-col items-end">
+                                  <div className="h-6 bg-gray-200 rounded w-16 mb-2"></div>
+                                  <div className="h-3 bg-gray-200 rounded w-20"></div>
                                 </div>
-                              </div>
-                              <div className="flex flex-col items-end">
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                                  activity.status === 'Interview' ? 'bg-green-50 text-green-700 border-green-100' :
-                                  activity.status === 'In Review' ? 'bg-amber-50 text-amber-700 border-amber-100' :
-                                  'bg-blue-50 text-blue-700 border-blue-100'
-                                }`}>
-                                  {activity.status}
-                                </span>
-                                <span className="text-xs text-gray-400 mt-2 flex items-center">
-                                  <Clock className="w-3 h-3 mr-1" />
-                                  {activity.date}
-                                </span>
                               </div>
                             </div>
+                          ))
+                        ) : recentActivity.length > 0 ? (
+                          recentActivity.map((activity) => (
+                            <div key={activity.id} className="p-6 hover:bg-gray-50/80 transition-colors group cursor-pointer">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-4">
+                                  <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 font-bold border border-gray-200">
+                                    {activity.company.charAt(0)}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{activity.role}</p>
+                                    <p className="text-sm text-gray-500">{activity.company}</p>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col items-end">
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                                    activity.status === 'Interview' ? 'bg-green-50 text-green-700 border-green-100' :
+                                    activity.status === 'In Review' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                                    'bg-blue-50 text-blue-700 border-blue-100'
+                                  }`}>
+                                    {activity.status}
+                                  </span>
+                                  <span className="text-xs text-gray-400 mt-2 flex items-center">
+                                    <Clock className="w-3 h-3 mr-1" />
+                                    {activity.date}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-8 text-center">
+                            <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                            <p className="text-gray-500">No recent activity</p>
+                            <p className="text-sm text-gray-400 mt-1">Start applying for jobs to see your activity here</p>
                           </div>
-                        ))}
+                        )}
                       </div>
                       <div className="p-4 border-t border-gray-100 bg-gray-50/30">
-                        <button className="w-full text-center text-sm text-gray-500 hover:text-blue-600 font-medium py-2">
+                        <button
+                          onClick={() => setActiveTab('Applications')}
+                          className="w-full text-center text-sm text-gray-500 hover:text-blue-600 font-medium py-2"
+                        >
                           View all applications
                         </button>
                       </div>
