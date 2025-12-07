@@ -10,7 +10,6 @@ import {
   X,
   User as UserIcon,
   Search,
-  Settings,
   ChevronDown,
   Building,
 } from 'lucide-react'
@@ -177,13 +176,6 @@ export function Navbar() {
                             )}
                           </>
                         )}
-                        <button
-                          onClick={() => handleNavigation('/settings')}
-                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        >
-                          <Settings className="w-4 h-4 mr-2" />
-                          Settings
-                        </button>
                       </div>
 
                       <div className="border-t border-gray-100 py-1">
@@ -317,13 +309,6 @@ export function Navbar() {
                       )}
                     </>
                   )}
-                  <button
-                    onClick={() => handleNavigation('/settings')}
-                    className="flex items-center w-full px-3 py-3 rounded-lg text-base font-medium text-gray-700 hover:bg-gray-50"
-                  >
-                    <Settings className="w-5 h-5 mr-3 text-gray-400" />
-                    Settings
-                  </button>
                 </div>
 
                 <button
