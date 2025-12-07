@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { X, Send, FileText, User, Mail, Phone, Briefcase, GraduationCap } from 'lucide-react'
+import { X, Send, FileText, Upload } from 'lucide-react'
 import { applicationService } from '../services/applicationService'
+import { useAuth } from '../hooks/useAuth'
 import type { ApplicationRequest, ApplicationResponse, Job } from '../types/job.types'
 
 interface JobApplicationFormProps {
@@ -11,15 +12,11 @@ interface JobApplicationFormProps {
 }
 
 export function JobApplicationForm({ job, isOpen, onClose, onSuccess }: JobApplicationFormProps) {
+  const { token, user } = useAuth()
   const [formData, setFormData] = useState<ApplicationRequest>({
     jobId: parseInt(job.id),
-    applicantName: '',
-    applicantEmail: '',
-    applicantPhone: '',
-    resumeUrl: '',
     coverLetter: '',
-    experience: '',
-    education: ''
+    customResumeUrl: ''
   })
   
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -27,18 +24,11 @@ export function JobApplicationForm({ job, isOpen, onClose, onSuccess }: JobAppli
 
   useEffect(() => {
     if (isOpen) {
-      setFormData(prev => ({
-        ...prev,
-        jobId: parseInt(job.id), // Ensures ID is always synced with the current job prop
-        // Optional: Uncomment lines below if you want to clear the form every time it opens
-        // applicantName: '',
-        // applicantEmail: '',
-        // applicantPhone: '',
-        // resumeUrl: '',
-        // coverLetter: '',
-        // experience: '',
-        // education: ''
-      }))
+      setFormData({
+        jobId: parseInt(job.id),
+        coverLetter: '',
+        customResumeUrl: ''
+      })
     }
   }, [isOpen, job.id])
 
@@ -54,19 +44,14 @@ export function JobApplicationForm({ job, isOpen, onClose, onSuccess }: JobAppli
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    if (!token) {
+      setError('You must be logged in to apply for this job')
+      return
+    }
+    
     // Basic validation
-    if (!formData.applicantName.trim()) {
-      setError('Please enter your name')
-      return
-    }
-    
-    if (!formData.applicantEmail.trim()) {
-      setError('Please enter your email')
-      return
-    }
-    
-    if (!formData.applicantEmail.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-      setError('Please enter a valid email address')
+    if (!formData.coverLetter.trim()) {
+      setError('Please provide a cover letter')
       return
     }
 
@@ -74,20 +59,15 @@ export function JobApplicationForm({ job, isOpen, onClose, onSuccess }: JobAppli
       setIsSubmitting(true)
       setError(null)
       
-      const application = await applicationService.submitApplication(formData)
+      const application = await applicationService.submitApplication(formData, token)
       onSuccess(application)
       onClose()
       
       // Reset form
       setFormData({
         jobId: parseInt(job.id),
-        applicantName: '',
-        applicantEmail: '',
-        applicantPhone: '',
-        resumeUrl: '',
         coverLetter: '',
-        experience: '',
-        education: ''
+        customResumeUrl: ''
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit application')
@@ -125,140 +105,65 @@ export function JobApplicationForm({ job, isOpen, onClose, onSuccess }: JobAppli
             </button>
           </div>
 
+          {/* User Info */}
+          <div className="px-6 py-4 bg-blue-50 border-b border-gray-200">
+            <p className="text-sm text-blue-800">
+              Applying as: <span className="font-semibold">{user?.name || user?.email}</span>
+            </p>
+            <p className="text-xs text-blue-600 mt-1">
+              Your primary resume will be used unless you provide a custom resume URL below
+            </p>
+          </div>
+
           {/* Form */}
           <form onSubmit={handleSubmit} className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Name */}
-              <div>
-                <label htmlFor="applicantName" className="block text-sm font-medium text-gray-700 mb-2">
-                  <User className="w-4 h-4 inline mr-2" />
-                  Full Name *
-                </label>
-                <input
-                  type="text"
-                  id="applicantName"
-                  name="applicantName"
-                  value={formData.applicantName}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="John Doe"
-                />
-              </div>
-
-              {/* Email */}
-              <div>
-                <label htmlFor="applicantEmail" className="block text-sm font-medium text-gray-700 mb-2">
-                  <Mail className="w-4 h-4 inline mr-2" />
-                  Email Address *
-                </label>
-                <input
-                  type="email"
-                  id="applicantEmail"
-                  name="applicantEmail"
-                  value={formData.applicantEmail}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="john@example.com"
-                />
-              </div>
-
-              {/* Phone */}
-              <div>
-                <label htmlFor="applicantPhone" className="block text-sm font-medium text-gray-700 mb-2">
-                  <Phone className="w-4 h-4 inline mr-2" />
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  id="applicantPhone"
-                  name="applicantPhone"
-                  value={formData.applicantPhone}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="+1-555-123-4567"
-                />
-              </div>
-
-              {/* Resume URL */}
-              <div>
-                <label htmlFor="resumeUrl" className="block text-sm font-medium text-gray-700 mb-2">
-                  <FileText className="w-4 h-4 inline mr-2" />
-                  Resume URL
-                </label>
-                <input
-                  type="url"
-                  id="resumeUrl"
-                  name="resumeUrl"
-                  value={formData.resumeUrl}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="https://example.com/resume.pdf"
-                />
-              </div>
-            </div>
-
-            {/* Experience */}
-            <div className="mt-6">
-              <label htmlFor="experience" className="block text-sm font-medium text-gray-700 mb-2">
-                <Briefcase className="w-4 h-4 inline mr-2" />
-                Work Experience
+            {/* Custom Resume URL */}
+            <div className="mb-6">
+              <label htmlFor="customResumeUrl" className="block text-sm font-medium text-gray-700 mb-2">
+                <Upload className="w-4 h-4 inline mr-2" />
+                Custom Resume URL (Optional)
               </label>
-              <textarea
-                id="experience"
-                name="experience"
-                value={formData.experience}
+              <input
+                type="url"
+                id="customResumeUrl"
+                name="customResumeUrl"
+                value={formData.customResumeUrl}
                 onChange={handleInputChange}
-                rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Describe your relevant work experience..."
+                placeholder="https://example.com/custom-resume.pdf"
               />
-            </div>
-
-            {/* Education */}
-            <div className="mt-6">
-              <label htmlFor="education" className="block text-sm font-medium text-gray-700 mb-2">
-                <GraduationCap className="w-4 h-4 inline mr-2" />
-                Education
-              </label>
-              <textarea
-                id="education"
-                name="education"
-                value={formData.education}
-                onChange={handleInputChange}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Describe your educational background..."
-              />
+              <p className="text-xs text-gray-500 mt-1">
+                Leave blank to use your primary resume from your profile
+              </p>
             </div>
 
             {/* Cover Letter */}
-            <div className="mt-6">
+            <div className="mb-6">
               <label htmlFor="coverLetter" className="block text-sm font-medium text-gray-700 mb-2">
                 <FileText className="w-4 h-4 inline mr-2" />
-                Cover Letter
+                Cover Letter *
               </label>
               <textarea
                 id="coverLetter"
                 name="coverLetter"
                 value={formData.coverLetter}
                 onChange={handleInputChange}
-                rows={4}
+                rows={6}
+                required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Why are you interested in this position?"
+                placeholder="Tell us why you're interested in this position and how your experience aligns with the requirements..."
               />
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
                 {error}
               </div>
             )}
 
             {/* Actions */}
-            <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-gray-200">
+            <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
               <button
                 type="button"
                 onClick={onClose}

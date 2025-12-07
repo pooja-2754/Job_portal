@@ -182,13 +182,8 @@ export interface Location {
 
 export interface ApplicationRequest {
   jobId: number;
-  applicantName: string;
-  applicantEmail: string;
-  applicantPhone?: string;
-  resumeUrl?: string;
-  coverLetter?: string;
-  experience?: string;
-  education?: string;
+  coverLetter: string;
+  customResumeUrl?: string; // Optional - if not provided, will use primary resume
 }
 
 export interface ApplicationResponse {
@@ -198,11 +193,11 @@ export interface ApplicationResponse {
   jobCompany: string;
   applicantName: string;
   applicantEmail: string;
-  applicantPhone?: string;
-  resumeUrl?: string;
-  coverLetter?: string;
-  experience?: string;
-  education?: string;
+  applicantPhone: string;
+  resumeUrl: string;
+  coverLetter: string;
+  experience: null;
+  education: null;
   status: string;
   statusDisplayName: string;
   appliedDate: string;
