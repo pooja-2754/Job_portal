@@ -1,5 +1,5 @@
 import { createContext } from 'react';
-import type { EntityType, User } from './AuthContext';
+import type { EntityType, User } from '../types/auth.types';
 import type { Company, CompanySignupData } from './CompanyAuthContextValue';
 
 export interface CombinedAuthContextType {

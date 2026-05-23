@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Building2, MapPin, Clock, DollarSign, Calendar, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Building2, MapPin, Clock, DollarSign, Calendar, CheckCircle, Bookmark, BookmarkCheck, Loader2 } from 'lucide-react'
 import { Navbar } from '../components/Navbar'
 import { JobApplicationForm } from '../components/JobApplicationForm'
 import { jobService } from '../services/jobService'
+import { userService } from '../services/userService'
 import DOMPurify from 'dompurify'
 import type { Job } from '../types/job.types'
 
@@ -14,6 +15,9 @@ export const JobDetailsPage = () => {
   const [loading, setLoading] = useState(true)
   const [showApplicationForm, setShowApplicationForm] = useState(false)
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
+  const [isSaved, setIsSaved] = useState(false)
+  const [saveLoading, setSaveLoading] = useState(false)
+  const [saveMessage, setSaveMessage] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -45,6 +49,30 @@ export const JobDetailsPage = () => {
     setShowSuccessMessage(true)
     setShowApplicationForm(false)
     setTimeout(() => setShowSuccessMessage(false), 5000)
+  }
+
+  const handleToggleSave = async () => {
+    if (!id) return
+    setSaveLoading(true)
+    try {
+      if (isSaved) {
+        await userService.unsaveJob(id)
+        setIsSaved(false)
+        setSaveMessage('Removed from saved jobs')
+      } else {
+        await userService.saveJob(id)
+        setIsSaved(true)
+        setSaveMessage('Job saved!')
+      }
+      setTimeout(() => setSaveMessage(null), 3000)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error'
+      if (msg === 'Job already saved') {
+        setIsSaved(true)
+      }
+    } finally {
+      setSaveLoading(false)
+    }
   }
 
   if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>
@@ -201,9 +229,26 @@ export const JobDetailsPage = () => {
                 >
                   Apply for this Position
                 </button>
-                <button className="w-full border border-gray-300 text-gray-700 font-medium py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors">
-                  Save Job
+                <button
+                  onClick={handleToggleSave}
+                  disabled={saveLoading}
+                  className={`w-full flex items-center justify-center gap-2 font-medium py-3 px-4 rounded-lg transition-colors ${
+                    isSaved
+                      ? 'bg-blue-50 border border-blue-300 text-blue-700 hover:bg-blue-100'
+                      : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {saveLoading
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : isSaved
+                      ? <BookmarkCheck className="w-4 h-4" />
+                      : <Bookmark className="w-4 h-4" />
+                  }
+                  {isSaved ? 'Saved' : 'Save Job'}
                 </button>
+                {saveMessage && (
+                  <p className="text-sm text-center text-green-600 mt-1">{saveMessage}</p>
+                )}
               </div>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { API_BASE_URL } from '../config/api';
-import type { Job, Application, JobType, JobTypeApi } from '../types/job.types';
+import type { Job, Application, JobType, JobTypeLegacy, JobTypeApi } from '../types/job.types';
 
 // Helper function to get company auth headers
 const getCompanyAuthHeaders = () => {
@@ -82,7 +82,7 @@ export const companyJobService = {
 
   async createCompanyJob(job: Omit<Job, 'id'>): Promise<Job> {
     // Transform job type to match backend enum format
-    const transformJobType = (type: JobType): JobTypeApi => {
+    const transformJobType = (type: JobType | JobTypeLegacy): JobTypeApi => {
       switch (type) {
         case 'Full-Time':
           return 'FULL_TIME';
@@ -116,7 +116,7 @@ export const companyJobService = {
 
   async updateCompanyJob(id: string, job: Partial<Job>): Promise<Job> {
     // Transform job type to match backend enum format if present
-    const transformJobType = (type: JobType): JobTypeApi => {
+    const transformJobType = (type: JobType | JobTypeLegacy): JobTypeApi => {
       switch (type) {
         case 'Full-Time':
           return 'FULL_TIME';

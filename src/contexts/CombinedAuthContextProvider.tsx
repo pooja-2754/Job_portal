@@ -1,6 +1,6 @@
 import React from 'react';
 import type { ReactNode } from 'react';
-import { useAuth } from './AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useCompanyAuth } from '../hooks/useCompanyAuth';
 import { CombinedAuthContext } from './CombinedAuthContextValue';
 

@@ -2,7 +2,7 @@
 export { useCombinedAuth } from '../hooks/useCombinedAuth';
 export { useCombinedAuthContext } from '../hooks/useCombinedAuthContext';
 export { useCompanyAuth } from '../hooks/useCompanyAuth';
-export { useAuth } from './AuthContext';
+export { useAuth } from '../hooks/useAuth';
 
 // Re-export providers
 export { AuthProvider } from './AuthContext';
@@ -14,16 +14,8 @@ export { CompanyAuthContext } from './CompanyAuthContextValue';
 export { CombinedAuthContext } from './CombinedAuthContext';
 
 // Re-export types
-export type {
-  CombinedAuthContextType
-} from './CombinedAuthContextValue';
+export type { CombinedAuthContextType } from './CombinedAuthContextValue';
 
-export type {
-  User,
-  EntityType
-} from './AuthContext';
+export type { User, EntityType } from '../types/auth.types';
 
-export type {
-  Company,
-  CompanySignupData
-} from './CompanyAuthContextValue';
+export type { Company, CompanySignupData } from './CompanyAuthContextValue';

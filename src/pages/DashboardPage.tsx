@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import { useNavigate } from 'react-router-dom'
 import { Navbar } from '../components/Navbar'
 import ResumeManagement from '../components/ResumeManagement'
 import ApplicationsManagement from '../components/ApplicationsManagement'
@@ -8,6 +9,7 @@ import Messages from '../components/Messages'
 import Schedule from '../components/Schedule'
 import SeekerSettings from '../components/SeekerSettings'
 import { jobService } from '../services/jobService'
+import { userService } from '../services/userService'
 import {
   User,
   Briefcase,
@@ -54,7 +56,8 @@ interface RecentActivity {
 }
 
 const DashboardPage: React.FC = () => {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('Overview')
   const [stats, setStats] = useState<DashboardStats[]>([
     { label: 'Applications', value: '0', icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -75,9 +78,12 @@ const DashboardPage: React.FC = () => {
           throw new Error('Authentication token not found')
         }
 
-        // Fetch dashboard stats
-        const dashboardStats = await jobService.getDashboardStats()
-        
+        // Fetch dashboard stats and profile in parallel
+        const [dashboardStats, profile] = await Promise.all([
+          jobService.getDashboardStats(),
+          userService.getMyProfile().catch(() => null),
+        ])
+
         // Update stats with actual data
         setStats([
           {
@@ -89,14 +95,14 @@ const DashboardPage: React.FC = () => {
           },
           {
             label: 'Saved Jobs',
-            value: '0', // TODO: Implement saved jobs API
+            value: profile?.savedJobCount?.toString() || '0',
             icon: Bookmark,
             color: 'text-purple-600',
             bg: 'bg-purple-50'
           },
           {
             label: 'Interviews',
-            value: dashboardStats.shortlistedApplications?.toString() || '0', // Using shortlisted as interviews
+            value: dashboardStats.shortlistedApplications?.toString() || '0',
             icon: Calendar,
             color: 'text-green-600',
             bg: 'bg-green-50'
@@ -189,7 +195,10 @@ const DashboardPage: React.FC = () => {
 
           {/* Bottom Action (Logout) */}
           <div className="p-4 border-t border-gray-100">
-            <button className="flex items-center w-full p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+            <button
+              onClick={() => { logout(); navigate('/login'); }}
+              className="flex items-center w-full p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
               <div className="min-w-8 flex items-center justify-center">
                 <LogOut className="w-6 h-6" />
               </div>
@@ -215,7 +224,10 @@ const DashboardPage: React.FC = () => {
                 </p>
               </div>
               <div className="flex gap-3">
-                <button className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+                <button
+                  onClick={() => navigate('/jobs')}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                >
                   <TrendingUp className="h-4 w-4 mr-2" />
                   Find Jobs
                 </button>
